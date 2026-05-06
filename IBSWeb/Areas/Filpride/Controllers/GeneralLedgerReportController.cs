@@ -295,17 +295,18 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 worksheet.Cells["B4"].Value = $"{companyClaims}";
 
                 worksheet.Cells["A7"].Value = "Date";
-                worksheet.Cells["B7"].Value = "Reference";
-                worksheet.Cells["C7"].Value = "Description";
-                worksheet.Cells["D7"].Value = "Account No";
-                worksheet.Cells["E7"].Value = "Account Name";
-                worksheet.Cells["F7"].Value = "Sub-Account";
-                worksheet.Cells["G7"].Value = "Debit";
-                worksheet.Cells["H7"].Value = "Credit";
-                worksheet.Cells["I7"].Value = "Posted By";
+                worksheet.Cells["B7"].Value = "Module";
+                worksheet.Cells["C7"].Value = "Reference";
+                worksheet.Cells["D7"].Value = "Description";
+                worksheet.Cells["E7"].Value = "Account No";
+                worksheet.Cells["F7"].Value = "Account Name";
+                worksheet.Cells["G7"].Value = "Sub-Account";
+                worksheet.Cells["H7"].Value = "Debit";
+                worksheet.Cells["I7"].Value = "Credit";
+                worksheet.Cells["J7"].Value = "Posted By";
 
                 // Apply styling to the header row
-                using (var range = worksheet.Cells["A7:I7"])
+                using (var range = worksheet.Cells["A7:J7"])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = ExcelFillStyle.Solid;
@@ -319,42 +320,108 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 // Populate the data rows
                 int row = 8;
                 string currencyFormat = "#,##0.00";
+                var apNtAccount = "202010200";
+                var apTradeAccount = "202010100";
+                var arTrade = "101020100";
+                var advancesToSupplier = "101060100";
+                var advancesToEmployee = "101020400";
 
                 foreach (var gl in generalBooks)
                 {
+                    string? subAccountName = null;
+
+                    if (gl.Reference == "CR0000000392")
+                    {
+
+                    }
+
+                    if (gl.SubAccountName != null)
+                    {
+                        subAccountName = gl.SubAccountName;
+                    }
+                    else
+                    {
+                        switch (gl.ModuleType)
+                        {
+                            case nameof(ModuleType.Disbursement):
+                                {
+                                    if (gl.Reference.StartsWith("CVN") || gl.Reference.StartsWith("INV"))
+                                    {
+                                        subAccountName = generalBooks
+                                            .Where(x =>
+                                                x.Reference == gl.Reference &&
+                                                (x.AccountNo == apNtAccount ||
+                                                x.AccountNo == advancesToSupplier ||
+                                                x.AccountNo == advancesToEmployee))
+                                            .Select(x => x.SubAccountName)
+                                            .FirstOrDefault();
+                                    }
+                                    else
+                                    {
+                                        subAccountName = generalBooks
+                                            .Where(x =>
+                                                x.Reference == gl.Reference &&
+                                                x.AccountNo == apTradeAccount)
+                                            .Select(x => x.SubAccountName)
+                                            .FirstOrDefault();
+                                    }
+
+                                    break;
+                                }
+                            case nameof(ModuleType.Purchase):
+                                subAccountName = generalBooks
+                                    .Where(x =>
+                                        x.Reference == gl.Reference &&
+                                        x.AccountNo == apTradeAccount)
+                                    .Select(x => x.SubAccountName)
+                                    .FirstOrDefault();
+                                break;
+                            case nameof(ModuleType.Sales):
+                            case nameof(ModuleType.Collection):
+                                subAccountName = generalBooks
+                                    .Where(x =>
+                                        x.Reference == gl.Reference &&
+                                        x.AccountNo == arTrade)
+                                    .Select(x => x.SubAccountName)
+                                    .FirstOrDefault();
+                                break;
+                        }
+                    }
+
                     worksheet.Cells[row, 1].Value = gl.Date;
-                    worksheet.Cells[row, 2].Value = gl.Reference;
-                    worksheet.Cells[row, 3].Value = gl.Description;
-                    worksheet.Cells[row, 4].Value = gl.AccountNo;
-                    worksheet.Cells[row, 5].Value = gl.AccountTitle;
-                    worksheet.Cells[row, 6].Value = gl.SubAccountName;
-                    worksheet.Cells[row, 7].Value = gl.Debit;
-                    worksheet.Cells[row, 8].Value = gl.Credit;
-                    worksheet.Cells[row, 9].Value = gl.CreatedBy.ToUpper();
+                    worksheet.Cells[row, 2].Value = gl.ModuleType;
+                    worksheet.Cells[row, 3].Value = gl.Reference;
+                    worksheet.Cells[row, 4].Value = gl.Description;
+                    worksheet.Cells[row, 5].Value = gl.AccountNo;
+                    worksheet.Cells[row, 6].Value = gl.AccountTitle;
+                    worksheet.Cells[row, 7].Value = subAccountName;
+                    worksheet.Cells[row, 8].Value = gl.Debit;
+                    worksheet.Cells[row, 9].Value = gl.Credit;
+                    worksheet.Cells[row, 10].Value = gl.CreatedBy.ToUpper();
 
                     worksheet.Cells[row, 1].Style.Numberformat.Format = "MMM/dd/yyyy";
-                    worksheet.Cells[row, 7].Style.Numberformat.Format = currencyFormat;
                     worksheet.Cells[row, 8].Style.Numberformat.Format = currencyFormat;
+                    worksheet.Cells[row, 9].Style.Numberformat.Format = currencyFormat;
 
                     row++;
                 }
 
-                worksheet.Cells[row, 6].Value = "Total ";
-                worksheet.Cells[row, 7].Value = totalDebit;
-                worksheet.Cells[row, 8].Value = totalCredit;
+                worksheet.Cells[row, 7].Value = "Total ";
+                worksheet.Cells[row, 8].Value = totalDebit;
+                worksheet.Cells[row, 9].Value = totalCredit;
 
-                worksheet.Cells[row, 7].Style.Numberformat.Format = currencyFormat;
                 worksheet.Cells[row, 8].Style.Numberformat.Format = currencyFormat;
+                worksheet.Cells[row, 9].Style.Numberformat.Format = currencyFormat;
 
                 // Apply style to subtotal row
-                using (var range = worksheet.Cells[row, 1, row, 9])
+                using (var range = worksheet.Cells[row, 1, row, 10])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = ExcelFillStyle.Solid;
                     range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(172, 185, 202));
                 }
 
-                using (var range = worksheet.Cells[row, 6, row, 8])
+                using (var range = worksheet.Cells[row, 7, row, 10])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Border.Top.Style = ExcelBorderStyle.Thin; // Single top border
