@@ -1694,15 +1694,16 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             dr.SupplierName,
                             dr.CommissioneeName),
                         cancellationToken);
+            var generalLedgerBooksByReference = generalLedgerBooks.ToLookup(gl => gl.Reference);
 
             return generalLedgerBooks.ToDictionary(
                 gl => gl.GeneralLedgerBookId,
-                gl => ResolveSubAccountName(gl, generalLedgerBooks, deliveryReceipts));
+                gl => ResolveSubAccountName(gl, generalLedgerBooksByReference, deliveryReceipts));
         }
 
         private static string? ResolveSubAccountName(
             FilprideGeneralLedgerBook gl,
-            IEnumerable<FilprideGeneralLedgerBook> generalLedgerBooks,
+            ILookup<string, FilprideGeneralLedgerBook> generalLedgerBooksByReference,
             IReadOnlyDictionary<string, DeliveryReceiptSubAccountNames> deliveryReceipts)
         {
             if (!string.IsNullOrWhiteSpace(gl.SubAccountName))
@@ -1712,41 +1713,40 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             return gl.ModuleType switch
             {
-                nameof(ModuleType.Disbursement) => ResolveDisbursementSubAccountName(gl, generalLedgerBooks),
-                nameof(ModuleType.Purchase) => FindSubAccountName(generalLedgerBooks, gl.Reference, _apTradeAccount),
-                nameof(ModuleType.Sales) => ResolveSalesSubAccountName(gl, generalLedgerBooks, deliveryReceipts),
-                nameof(ModuleType.Collection) => FindSubAccountName(generalLedgerBooks, gl.Reference, _arTradeAccount),
+                nameof(ModuleType.Disbursement) => ResolveDisbursementSubAccountName(gl, generalLedgerBooksByReference),
+                nameof(ModuleType.Purchase) => FindSubAccountName(generalLedgerBooksByReference, gl.Reference, _apTradeAccount),
+                nameof(ModuleType.Sales) => ResolveSalesSubAccountName(gl, generalLedgerBooksByReference, deliveryReceipts),
+                nameof(ModuleType.Collection) => FindSubAccountName(generalLedgerBooksByReference, gl.Reference, _arTradeAccount),
                 _ => null
             };
         }
 
         private static string? ResolveDisbursementSubAccountName(
             FilprideGeneralLedgerBook gl,
-            IEnumerable<FilprideGeneralLedgerBook> generalLedgerBooks)
+            ILookup<string, FilprideGeneralLedgerBook> generalLedgerBooksByReference)
         {
             if (gl.Reference.StartsWith("CVN") || gl.Reference.StartsWith("INV"))
             {
-                return generalLedgerBooks
+                return generalLedgerBooksByReference[gl.Reference]
                     .Where(x =>
-                        x.Reference == gl.Reference &&
-                        (x.AccountNo == _apNonTradeAccount ||
+                        x.AccountNo == _apNonTradeAccount ||
                          x.AccountNo == _advancesToSupplierAccount ||
-                         x.AccountNo == _advancesToEmployeeAccount))
+                         x.AccountNo == _advancesToEmployeeAccount)
                     .Select(x => x.SubAccountName)
                     .FirstOrDefault();
             }
 
-            return FindSubAccountName(generalLedgerBooks, gl.Reference, _apTradeAccount);
+            return FindSubAccountName(generalLedgerBooksByReference, gl.Reference, _apTradeAccount);
         }
 
         private static string? ResolveSalesSubAccountName(
             FilprideGeneralLedgerBook gl,
-            IEnumerable<FilprideGeneralLedgerBook> generalLedgerBooks,
+            ILookup<string, FilprideGeneralLedgerBook> generalLedgerBooksByReference,
             IReadOnlyDictionary<string, DeliveryReceiptSubAccountNames> deliveryReceipts)
         {
             if (!gl.Reference.StartsWith("DR"))
             {
-                return FindSubAccountName(generalLedgerBooks, gl.Reference, _arTradeAccount);
+                return FindSubAccountName(generalLedgerBooksByReference, gl.Reference, _arTradeAccount);
             }
 
             if (!deliveryReceipts.TryGetValue(gl.Reference, out var dr))
@@ -1770,12 +1770,12 @@ namespace IBSWeb.Areas.Filpride.Controllers
         }
 
         private static string? FindSubAccountName(
-            IEnumerable<FilprideGeneralLedgerBook> generalLedgerBooks,
+            ILookup<string, FilprideGeneralLedgerBook> generalLedgerBooksByReference,
             string reference,
             string accountNo)
         {
-            return generalLedgerBooks
-                .Where(x => x.Reference == reference && x.AccountNo == accountNo)
+            return generalLedgerBooksByReference[reference]
+                .Where(x => x.AccountNo == accountNo)
                 .Select(x => x.SubAccountName)
                 .FirstOrDefault();
         }
