@@ -11,31 +11,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using IBS.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IBSWeb.Areas.Filpride.Controllers
 {
     [Area(nameof(Filpride))]
     [CompanyAuthorize(nameof(Filpride))]
-    [DepartmentAuthorize(SD.Department_Accounting, SD.Department_ManagementAccounting)]
-    public class TransactionMasterControlController : Controller
+    [Authorize(Roles = "Admin")]
+    public class TransactionMasterControlController(
+        ApplicationDbContext dbContext,
+        IUnitOfWork unitOfWork,
+        UserManager<ApplicationUser> userManager,
+        ILogger<TransactionMasterControlController> logger)
+        : Controller
     {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILogger<TransactionMasterControlController> _logger;
-
-        public TransactionMasterControlController(
-            ApplicationDbContext dbContext,
-            IUnitOfWork unitOfWork,
-            UserManager<ApplicationUser> userManager,
-            ILogger<TransactionMasterControlController> logger)
-        {
-            _dbContext = dbContext;
-            _unitOfWork = unitOfWork;
-            _userManager = userManager;
-            _logger = logger;
-        }
-
         private string GetUserFullName()
         {
             return User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value
@@ -44,10 +33,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
         private async Task<string?> GetCompanyClaimAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return null;
+            var user = await userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return null;
+            }
 
-            var claims = await _userManager.GetClaimsAsync(user);
+            var claims = await userManager.GetClaimsAsync(user);
             return claims.FirstOrDefault(c => c.Type == "Company")?.Value;
         }
 
@@ -57,6 +49,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index(TransactionMasterControlViewModel searchModel, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(searchModel.ReferenceNo))
@@ -69,54 +62,55 @@ namespace IBSWeb.Areas.Filpride.Controllers
             var referenceNo = searchModel.ReferenceNo.Trim();
 
             // Try to find in CV
-            var cvHeader = await _dbContext.FilprideCheckVoucherHeaders
+            var cvHeader = await dbContext.FilprideCheckVoucherHeaders
                 .FirstOrDefaultAsync(x => x.CheckVoucherHeaderNo == referenceNo && x.Company == company, cancellationToken);
 
             if (cvHeader != null)
             {
-                return RedirectToAction(nameof(Edit), new { referenceNo = referenceNo, type = "CV" });
+                return RedirectToAction(nameof(Edit), new { referenceNo, type = "CV" });
             }
 
             // Try to find in JV
-            var jvHeader = await _dbContext.FilprideJournalVoucherHeaders
+            var jvHeader = await dbContext.FilprideJournalVoucherHeaders
                 .FirstOrDefaultAsync(x => x.JournalVoucherHeaderNo == referenceNo && x.Company == company, cancellationToken);
 
             if (jvHeader != null)
             {
-                return RedirectToAction(nameof(Edit), new { referenceNo = referenceNo, type = "JV" });
+                return RedirectToAction(nameof(Edit), new { referenceNo, type = "JV" });
             }
 
             // Try to find in SI
-            var siHeader = await _dbContext.FilprideSalesInvoices
+            var siHeader = await dbContext.FilprideSalesInvoices
                 .FirstOrDefaultAsync(x => x.SalesInvoiceNo == referenceNo && x.Company == company, cancellationToken);
 
             if (siHeader != null)
             {
-                return RedirectToAction(nameof(Edit), new { referenceNo = referenceNo, type = "SI" });
+                return RedirectToAction(nameof(Edit), new { referenceNo, type = "SI" });
             }
 
             // Try to find in SV
-            var svHeader = await _dbContext.FilprideServiceInvoices
+            var svHeader = await dbContext.FilprideServiceInvoices
                 .FirstOrDefaultAsync(x => x.ServiceInvoiceNo == referenceNo && x.Company == company, cancellationToken);
 
             if (svHeader != null)
             {
-                return RedirectToAction(nameof(Edit), new { referenceNo = referenceNo, type = "SV" });
+                return RedirectToAction(nameof(Edit), new { referenceNo, type = "SV" });
             }
 
             // Try to find in CR
-            var crHeader = await _dbContext.FilprideCollectionReceipts
+            var crHeader = await dbContext.FilprideCollectionReceipts
                 .FirstOrDefaultAsync(x => x.CollectionReceiptNo == referenceNo && x.Company == company, cancellationToken);
 
             if (crHeader != null)
             {
-                return RedirectToAction(nameof(Edit), new { referenceNo = referenceNo, type = "CR" });
+                return RedirectToAction(nameof(Edit), new { referenceNo, type = "CR" });
             }
 
             TempData["error"] = "No transaction found with that reference number.";
             return View(searchModel);
         }
 
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(string referenceNo, string type, CancellationToken cancellationToken)
         {
             var company = await GetCompanyClaimAsync();
@@ -124,10 +118,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             if (type == "CV")
             {
-                var header = await _dbContext.FilprideCheckVoucherHeaders
+                var header = await dbContext.FilprideCheckVoucherHeaders
                     .FirstOrDefaultAsync(x => x.CheckVoucherHeaderNo == referenceNo && x.Company == company, cancellationToken);
 
-                if (header == null) return NotFound();
+                if (header == null)
+                {
+                    return NotFound();
+                }
 
                 model.Date = header.Date;
 
@@ -150,10 +147,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
             else if (type == "JV")
             {
-                var header = await _dbContext.FilprideJournalVoucherHeaders
+                var header = await dbContext.FilprideJournalVoucherHeaders
                     .FirstOrDefaultAsync(x => x.JournalVoucherHeaderNo == referenceNo && x.Company == company, cancellationToken);
 
-                if (header == null) return NotFound();
+                if (header == null)
+                {
+                    return NotFound();
+                }
 
                 model.Date = header.Date;
                 model.Particulars = header.Particulars;
@@ -161,10 +161,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
             else if (type == "SI")
             {
-                var header = await _dbContext.FilprideSalesInvoices
+                var header = await dbContext.FilprideSalesInvoices
                     .FirstOrDefaultAsync(x => x.SalesInvoiceNo == referenceNo && x.Company == company, cancellationToken);
 
-                if (header == null) return NotFound();
+                if (header == null)
+                {
+                    return NotFound();
+                }
 
                 model.Date = header.TransactionDate;
                 model.Particulars = header.Remarks;
@@ -172,10 +175,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
             else if (type == "SV")
             {
-                var header = await _dbContext.FilprideServiceInvoices
+                var header = await dbContext.FilprideServiceInvoices
                     .FirstOrDefaultAsync(x => x.ServiceInvoiceNo == referenceNo && x.Company == company, cancellationToken);
 
-                if (header == null) return NotFound();
+                if (header == null)
+                {
+                    return NotFound();
+                }
 
                 model.Date = header.Period;
                 model.Particulars = header.Instructions;
@@ -183,10 +189,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
             else if (type == "CR")
             {
-                var header = await _dbContext.FilprideCollectionReceipts
+                var header = await dbContext.FilprideCollectionReceipts
                     .FirstOrDefaultAsync(x => x.CollectionReceiptNo == referenceNo && x.Company == company, cancellationToken);
 
-                if (header == null) return NotFound();
+                if (header == null)
+                {
+                    return NotFound();
+                }
 
                 model.Date = header.TransactionDate;
                 model.Particulars = header.Remarks ?? string.Empty;
@@ -200,6 +209,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Edit(TransactionMasterControlViewModel model, CancellationToken cancellationToken)
         {
@@ -209,16 +219,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
 
             var company = await GetCompanyClaimAsync();
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
                 if (model.TransactionType == "CV")
                 {
-                    var header = await _dbContext.FilprideCheckVoucherHeaders
+                    var header = await dbContext.FilprideCheckVoucherHeaders
                         .FirstOrDefaultAsync(x => x.CheckVoucherHeaderNo == model.ReferenceNo && x.Company == company, cancellationToken);
 
-                    if (header == null) throw new Exception("CV Header not found.");
+                    if (header == null)
+                    {
+                        throw new Exception("CV Header not found.");
+                    }
 
                     var finalParticulars = !string.IsNullOrWhiteSpace(model.PaymentFor)
                         ? $"{model.Particulars}. Payment for {model.PaymentFor}"
@@ -233,7 +246,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
                     // Update Disbursement Books
-                    var disbursementBooks = await _dbContext.FilprideDisbursementBooks
+                    var disbursementBooks = await dbContext.FilprideDisbursementBooks
                         .Where(x => x.CVNo == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -246,7 +259,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     }
 
                     // Update GL Books
-                    var glBooks = await _dbContext.FilprideGeneralLedgerBooks
+                    var glBooks = await dbContext.FilprideGeneralLedgerBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -258,14 +271,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     // Cascading update: If this is an Invoicing CV, update the Payment CV that pays for it.
                     if (header.CvType == nameof(CVType.Invoicing))
                     {
-                        var paymentCvIds = await _dbContext.FilprideMultipleCheckVoucherPayments
+                        var paymentCvIds = await dbContext.FilprideMultipleCheckVoucherPayments
                             .Where(x => x.CheckVoucherHeaderInvoiceId == header.CheckVoucherHeaderId)
                             .Select(x => x.CheckVoucherHeaderPaymentId)
                             .ToListAsync(cancellationToken);
 
                         foreach (var paymentId in paymentCvIds)
                         {
-                            var paymentHeader = await _dbContext.FilprideCheckVoucherHeaders
+                            var paymentHeader = await dbContext.FilprideCheckVoucherHeaders
                                 .FirstOrDefaultAsync(x => x.CheckVoucherHeaderId == paymentId, cancellationToken);
 
                             if (paymentHeader != null)
@@ -284,15 +297,21 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         paymentHeader.EditedBy = GetUserFullName();
                                         paymentHeader.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
-                                        var pBooks = await _dbContext.FilprideDisbursementBooks
+                                        var pBooks = await dbContext.FilprideDisbursementBooks
                                             .Where(x => x.CVNo == paymentHeader.CheckVoucherHeaderNo && x.Company == company)
                                             .ToListAsync(cancellationToken);
-                                        foreach (var b in pBooks) b.Particulars = newPaymentParticulars;
+                                        foreach (var b in pBooks)
+                                        {
+                                            b.Particulars = newPaymentParticulars;
+                                        }
 
-                                        var pGls = await _dbContext.FilprideGeneralLedgerBooks
+                                        var pGls = await dbContext.FilprideGeneralLedgerBooks
                                             .Where(x => x.Reference == paymentHeader.CheckVoucherHeaderNo && x.Company == company)
                                             .ToListAsync(cancellationToken);
-                                        foreach (var gl in pGls) gl.Description = newPaymentParticulars;
+                                        foreach (var gl in pGls)
+                                        {
+                                            gl.Description = newPaymentParticulars;
+                                        }
                                     }
                                 }
                             }
@@ -301,10 +320,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 }
                 else if (model.TransactionType == "JV")
                 {
-                    var header = await _dbContext.FilprideJournalVoucherHeaders
+                    var header = await dbContext.FilprideJournalVoucherHeaders
                         .FirstOrDefaultAsync(x => x.JournalVoucherHeaderNo == model.ReferenceNo && x.Company == company, cancellationToken);
 
-                    if (header == null) throw new Exception("JV Header not found.");
+                    if (header == null)
+                    {
+                        throw new Exception("JV Header not found.");
+                    }
 
                     // Update Header
                     header.Particulars = model.Particulars;
@@ -312,7 +334,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
                     // Update Journal Books
-                    var journalBooks = await _dbContext.FilprideJournalBooks
+                    var journalBooks = await dbContext.FilprideJournalBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -322,7 +344,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     }
 
                     // Update GL Books
-                    var glBooks = await _dbContext.FilprideGeneralLedgerBooks
+                    var glBooks = await dbContext.FilprideGeneralLedgerBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -333,16 +355,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 }
                 else if (model.TransactionType == "SI")
                 {
-                    var header = await _dbContext.FilprideSalesInvoices
+                    var header = await dbContext.FilprideSalesInvoices
                         .FirstOrDefaultAsync(x => x.SalesInvoiceNo == model.ReferenceNo && x.Company == company, cancellationToken);
 
-                    if (header == null) throw new Exception("SI Header not found.");
+                    if (header == null)
+                    {
+                        throw new Exception("SI Header not found.");
+                    }
 
                     header.Remarks = model.Particulars;
                     header.EditedBy = GetUserFullName();
                     header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
-                    var salesBooks = await _dbContext.FilprideSalesBooks
+                    var salesBooks = await dbContext.FilprideSalesBooks
                         .Where(x => x.SerialNo == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -351,7 +376,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         book.Description = model.Particulars;
                     }
 
-                    var glBooks = await _dbContext.FilprideGeneralLedgerBooks
+                    var glBooks = await dbContext.FilprideGeneralLedgerBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -362,16 +387,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 }
                 else if (model.TransactionType == "SV")
                 {
-                    var header = await _dbContext.FilprideServiceInvoices
+                    var header = await dbContext.FilprideServiceInvoices
                         .FirstOrDefaultAsync(x => x.ServiceInvoiceNo == model.ReferenceNo && x.Company == company, cancellationToken);
 
-                    if (header == null) throw new Exception("SV Header not found.");
+                    if (header == null)
+                    {
+                        throw new Exception("SV Header not found.");
+                    }
 
                     header.Instructions = model.Particulars;
                     header.EditedBy = GetUserFullName();
                     header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
-                    var salesBooks = await _dbContext.FilprideSalesBooks
+                    var salesBooks = await dbContext.FilprideSalesBooks
                         .Where(x => x.SerialNo == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -380,7 +408,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         book.Description = model.Particulars;
                     }
 
-                    var glBooks = await _dbContext.FilprideGeneralLedgerBooks
+                    var glBooks = await dbContext.FilprideGeneralLedgerBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -391,16 +419,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 }
                 else if (model.TransactionType == "CR")
                 {
-                    var header = await _dbContext.FilprideCollectionReceipts
+                    var header = await dbContext.FilprideCollectionReceipts
                         .FirstOrDefaultAsync(x => x.CollectionReceiptNo == model.ReferenceNo && x.Company == company, cancellationToken);
 
-                    if (header == null) throw new Exception("CR Header not found.");
+                    if (header == null)
+                    {
+                        throw new Exception("CR Header not found.");
+                    }
 
                     header.Remarks = model.Particulars;
                     header.EditedBy = GetUserFullName();
                     header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
 
-                    var cashReceiptBooks = await _dbContext.FilprideCashReceiptBooks
+                    var cashReceiptBooks = await dbContext.FilprideCashReceiptBooks
                         .Where(x => x.RefNo == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -409,7 +440,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         book.Particulars = model.Particulars;
                     }
 
-                    var glBooks = await _dbContext.FilprideGeneralLedgerBooks
+                    var glBooks = await dbContext.FilprideGeneralLedgerBooks
                         .Where(x => x.Reference == model.ReferenceNo && x.Company == company)
                         .ToListAsync(cancellationToken);
 
@@ -419,7 +450,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     }
                 }
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 // Audit Trail
                 FilprideAuditTrail auditTrail = new(
@@ -428,8 +459,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     "Master Control",
                     company!
                 );
-                await _unitOfWork.FilprideAuditTrail.AddAsync(auditTrail, cancellationToken);
-                await _unitOfWork.SaveAsync(cancellationToken);
+                await unitOfWork.FilprideAuditTrail.AddAsync(auditTrail, cancellationToken);
+                await unitOfWork.SaveAsync(cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
                 TempData["success"] = "Transaction updated successfully across all records.";
@@ -438,7 +469,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                _logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", model.ReferenceNo);
+                logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", model.ReferenceNo);
                 TempData["error"] = $"Error: {ex.Message}";
                 return View(model);
             }
