@@ -44,6 +44,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(TransactionMasterControlViewModel searchModel, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(searchModel.ReferenceNo))
@@ -80,6 +81,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TransactionMasterControlViewModel model, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
@@ -102,7 +104,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", model.ReferenceNo);
+                var safeRefNo = model.ReferenceNo?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", safeRefNo);
                 TempData["error"] = "An error occurred while updating the transaction. Please contact support.";
                 return View(model);
             }

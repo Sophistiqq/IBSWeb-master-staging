@@ -285,7 +285,8 @@ namespace IBS.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", model.ReferenceNo);
+                var safeRefNo = model.ReferenceNo?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                logger.LogError(ex, "Error updating transaction via Master Control. Ref: {Ref}", safeRefNo);
                 throw;
             }
         }
