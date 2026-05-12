@@ -317,7 +317,7 @@ namespace IBS.Services
                 foreach (var book in salesBooks) book.Description = particulars;
             }
 
-            // Update Cash Receipt Books (for CR)
+            // Update Collection Receipt Books (for CR)
             if (header is FilprideCollectionReceipt)
             {
                 var cashReceiptBooks = await dbContext.FilprideCashReceiptBooks
@@ -327,10 +327,13 @@ namespace IBS.Services
             }
 
             // Update GL Books (Common)
-            var glBooks = await dbContext.FilprideGeneralLedgerBooks
-                .Where(x => x.Reference == referenceNo && x.Company == company)
-                .ToListAsync(cancellationToken);
-            foreach (var gl in glBooks) gl.Description = particulars;
+            if (header is not (FilprideSalesInvoice or FilprideServiceInvoice or FilprideCollectionReceipt))
+            {
+                var glBooks = await dbContext.FilprideGeneralLedgerBooks
+                    .Where(x => x.Reference == referenceNo && x.Company == company)
+                    .ToListAsync(cancellationToken);
+                foreach (var gl in glBooks) gl.Description = particulars;
+            }
         }
     }
 }
