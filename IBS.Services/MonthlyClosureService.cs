@@ -438,7 +438,7 @@ namespace IBS.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while recording the not updated sales for the month.");
+                _logger.LogError(ex, "An error occurred while recording the not updated purchases for the month.");
                 throw;
             }
         }
