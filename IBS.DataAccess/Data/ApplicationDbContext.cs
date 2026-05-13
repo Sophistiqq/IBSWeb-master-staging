@@ -326,6 +326,8 @@ namespace IBS.DataAccess.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 x.HasIndex(s => s.LockedDate);
                 x.HasIndex(s => s.UpdatedDate);
+                x.HasIndex(s => s.DeliveryReceiptId)
+                    .IsUnique();
             });
 
             builder.Entity<FilpridePurchaseLockedRecordsQueue>(x =>
@@ -336,6 +338,8 @@ namespace IBS.DataAccess.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 x.HasIndex(s => s.LockedDate);
                 x.HasIndex(s => s.UpdatedDate);
+                x.HasIndex(s => s.ReceivingReportId)
+                    .IsUnique();
             });
 
             #region-- Master File

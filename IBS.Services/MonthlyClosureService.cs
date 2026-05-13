@@ -304,10 +304,10 @@ namespace IBS.Services
         {
             try
             {
-                var isAlreadyLocked = await _dbContext.FilprideSalesLockedRecordsQueues
-                    .AnyAsync(x => x.LockedDate >= periodMonth, cancellationToken);
+                var hasLockedSalesForPeriod = await _dbContext.FilprideSalesLockedRecordsQueues
+                    .AnyAsync(x => x.LockedDate == periodMonth, cancellationToken);
 
-                if (isAlreadyLocked)
+                if (hasLockedSalesForPeriod)
                 {
                     return;
                 }
@@ -329,6 +329,10 @@ namespace IBS.Services
                     return;
                 }
 
+                var existingDeliveryReceiptIds = await _dbContext.FilprideSalesLockedRecordsQueues
+                    .Select(x => x.DeliveryReceiptId)
+                    .ToHashSetAsync(cancellationToken);
+
                 var lockedRecordQueues = new List<FilprideSalesLockedRecordsQueue>();
                 var lockedDate = periodMonth;
 
@@ -336,6 +340,11 @@ namespace IBS.Services
                 {
                     foreach (var dr in cos.DeliveryReceipts!)
                     {
+                        if (existingDeliveryReceiptIds.Contains(dr.DeliveryReceiptId))
+                        {
+                            continue;
+                        }
+
                         lockedRecordQueues.Add(new FilprideSalesLockedRecordsQueue
                         {
                             LockedDate = lockedDate,
@@ -343,7 +352,14 @@ namespace IBS.Services
                             Quantity = dr.Quantity,
                             Price = cos.DeliveredPrice
                         });
+
+                        existingDeliveryReceiptIds.Add(dr.DeliveryReceiptId);
                     }
+                }
+
+                if (lockedRecordQueues.Count == 0)
+                {
+                    return;
                 }
 
                 await _dbContext.FilprideSalesLockedRecordsQueues.AddRangeAsync(lockedRecordQueues, cancellationToken);
@@ -360,10 +376,10 @@ namespace IBS.Services
         {
             try
             {
-                var isAlreadyLocked = await _dbContext.FilpridePurchaseLockedRecordsQueues
-                    .AnyAsync(x => x.LockedDate >= periodMonth, cancellationToken);
+                var hasLockedPurchasesForPeriod = await _dbContext.FilpridePurchaseLockedRecordsQueues
+                    .AnyAsync(x => x.LockedDate == periodMonth, cancellationToken);
 
-                if (isAlreadyLocked)
+                if (hasLockedPurchasesForPeriod)
                 {
                     return;
                 }
@@ -385,21 +401,36 @@ namespace IBS.Services
                     return;
                 }
 
+                var existingReceivingReportIds = await _dbContext.FilpridePurchaseLockedRecordsQueues
+                    .Select(x => x.ReceivingReportId)
+                    .ToHashSetAsync(cancellationToken);
+
                 var lockedRecordQueues = new List<FilpridePurchaseLockedRecordsQueue>();
-                var lockedDate = periodMonth;
 
                 foreach (var po in poNotUpdatedPrice)
                 {
                     foreach (var rr in po.ReceivingReports!)
                     {
+                        if (existingReceivingReportIds.Contains(rr.ReceivingReportId))
+                        {
+                            continue;
+                        }
+
                         lockedRecordQueues.Add(new FilpridePurchaseLockedRecordsQueue
                         {
-                            LockedDate = lockedDate,
+                            LockedDate = periodMonth,
                             ReceivingReportId = rr.ReceivingReportId,
                             Quantity = rr.QuantityReceived,
                             Price = po.Price
                         });
+
+                        existingReceivingReportIds.Add(rr.ReceivingReportId);
                     }
+                }
+
+                if (lockedRecordQueues.Count == 0)
+                {
+                    return;
                 }
 
                 await _dbContext.FilpridePurchaseLockedRecordsQueues.AddRangeAsync(lockedRecordQueues, cancellationToken);
