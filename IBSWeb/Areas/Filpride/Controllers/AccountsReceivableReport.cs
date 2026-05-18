@@ -1254,7 +1254,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     receivingReports.TryGetValue(dr.DeliveryReceiptId, out var rr);
 
                     if (viewModel.ReportType == "Delivered" && dateRangeType == "AsOf" &&
-                        dr.Date != viewModel.DateFrom)
+                        dr.DeliveredDate != viewModel.DateFrom)
                     {
                         // Don't show record of other dates if entry is "as of" and "delivered"
                     }
