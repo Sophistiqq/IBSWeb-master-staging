@@ -407,15 +407,23 @@ namespace IBSWeb.Areas.Filpride.Controllers
         [HttpPost]
         public async Task<IActionResult> GeneratedDispatchReport(DispatchReportViewModel viewModel, CancellationToken cancellationToken)
         {
+            var isDeliveredDateRange = viewModel.ReportType == "Delivered" && viewModel.ReportMode == "DateRange";
+
             if (viewModel.DateFrom == default && viewModel.ReportType != "InTransit")
             {
                 TempData["warning"] = "Please enter a valid Date From";
                 return RedirectToAction(nameof(DispatchReport));
             }
 
-            if (viewModel.DateFrom == default || (viewModel.DateTo == default && viewModel.ReportType == "InTransit"))
+            if (viewModel.ReportType == "InTransit" && (viewModel.DateFrom == default || viewModel.DateTo == default))
             {
-                TempData["warning"] = "Please enter a valid Date From and To";
+                TempData["warning"] = "Please enter a valid Date From and Date To";
+                return RedirectToAction(nameof(DispatchReport));
+            }
+
+            if (isDeliveredDateRange && viewModel.DateTo == default)
+            {
+                TempData["warning"] = "Please enter a valid Date To";
                 return RedirectToAction(nameof(DispatchReport));
             }
 
@@ -436,7 +444,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 var currentUser = GetUserFullName();
                 var today = DateTimeHelper.GetCurrentPhilippineTime();
                 Expression<Func<FilprideDeliveryReceipt, bool>>? filter;
-                var dateRangeType = viewModel.DateTo != default ? "ByRange" : "AsOf";
+                var dateRangeType = isDeliveredDateRange ? "ByRange" : "AsOf";
                 //var currencyFormatTwoDecimal = "#,##0.00";
 
                 if(viewModel.ReportType == "Delivered")
@@ -1032,9 +1040,17 @@ namespace IBSWeb.Areas.Filpride.Controllers
         #region -- Generate Dispatch Report Excel File --
         public async Task<IActionResult> GenerateDispatchReportExcelFile(DispatchReportViewModel viewModel, CancellationToken cancellationToken)
         {
+            var isDeliveredDateRange = viewModel.ReportType == "Delivered" && viewModel.ReportMode == "DateRange";
+
             if (viewModel.DateFrom == default && viewModel.ReportType != "InTransit")
             {
                 TempData["warning"] = "Please enter a valid Date From";
+                return RedirectToAction(nameof(DispatchReport));
+            }
+
+            if (isDeliveredDateRange && viewModel.DateTo == default)
+            {
+                TempData["warning"] = "Please enter a valid Date To";
                 return RedirectToAction(nameof(DispatchReport));
             }
 
@@ -1048,7 +1064,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 var currentUser = GetUserFullName();
                 var today = DateTimeHelper.GetCurrentPhilippineTime();
                 Expression<Func<FilprideDeliveryReceipt, bool>>? filter;
-                var dateRangeType = viewModel.DateTo != default ? "ByRange" : "AsOf";
+                var dateRangeType = isDeliveredDateRange ? "ByRange" : "AsOf";
                 var currencyFormatTwoDecimal = "#,##0.00";
 
                 var statusFilter = NormalizeStatusFilter(viewModel.DRStatusFilter);
@@ -1174,53 +1190,54 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 worksheet.Cells["C10"].Value = "TYPE";
                 worksheet.Cells["D10"].Value = "DR NO.";
                 worksheet.Cells["E10"].Value = "PRODUCTS";
-                worksheet.Cells["F10"].Value = "QTY.";
-                worksheet.Cells["G10"].Value = "PICK-UP POINT";
-                worksheet.Cells["H10"].Value = "PO #";
-                worksheet.Cells["I10"].Value = "ATL#";
-                worksheet.Cells["J10"].Value = "COS NO.";
-                worksheet.Cells["K10"].Value = "HAULER NAME";
-                worksheet.Cells["L10"].Value = "SUPPLIER";
-                worksheet.Cells["M10"].Value = "DELIVERY OPTION";
-                worksheet.Cells["N10"].Value = "FREIGHT CHARGE";
-                worksheet.Cells["O10"].Value = "ECC";
-                worksheet.Cells["P10"].Value = "TOTAL FREIGHT";
+                worksheet.Cells["F10"].Value = "SELLING PRICE";
+                worksheet.Cells["G10"].Value = "QTY.";
+                worksheet.Cells["H10"].Value = "PICK-UP POINT";
+                worksheet.Cells["I10"].Value = "PO #";
+                worksheet.Cells["J10"].Value = "ATL#";
+                worksheet.Cells["K10"].Value = "COS NO.";
+                worksheet.Cells["L10"].Value = "HAULER NAME";
+                worksheet.Cells["M10"].Value = "SUPPLIER";
+                worksheet.Cells["N10"].Value = "DELIVERY OPTION";
+                worksheet.Cells["O10"].Value = "FREIGHT CHARGE";
+                worksheet.Cells["P10"].Value = "ECC";
+                worksheet.Cells["Q10"].Value = "TOTAL FREIGHT";
 
                 #region Remove this in the future
                 //TODO Remove this in the future
-                worksheet.Cells["Q10"].Value = "OTC COS No.";
-                worksheet.Cells["R10"].Value = "OTC DR No.";
+                worksheet.Cells["R10"].Value = "OTC COS No.";
+                worksheet.Cells["S10"].Value = "OTC DR No.";
                 #endregion
 
-                worksheet.Cells["S10"].Value = "RR NO.";
-                worksheet.Cells["T10"].Value = "UNIT COST.";
-                worksheet.Cells["U10"].Value = "SUPPLIER'S SI";
-                worksheet.Cells["V10"].Value = "SUPPLIER'S WC";
+                worksheet.Cells["T10"].Value = "RR NO.";
+                worksheet.Cells["U10"].Value = "UNIT COST.";
+                worksheet.Cells["V10"].Value = "SUPPLIER'S SI";
+                worksheet.Cells["W10"].Value = "SUPPLIER'S WC";
 
                 if (viewModel.ReportType == "Delivered")
                 {
-                    worksheet.Cells["W10"].Value = "DELIVERED DATE";
-                    worksheet.Cells["X10"].Value = "STATUS";
+                    worksheet.Cells["X10"].Value = "DELIVERED DATE";
+                    worksheet.Cells["Y10"].Value = "STATUS";
                 }
                 else
                 {
-                    worksheet.Cells["W10"].Value = "LIFTING DATE";
-                    worksheet.Cells["X10"].Value = "LIFTING QUANTITY";
+                    worksheet.Cells["X10"].Value = "LIFTING DATE";
+                    worksheet.Cells["Y10"].Value = "LIFTING QUANTITY";
                 }
-                worksheet.Cells["Y10"].Value = "TOTAL COST";
+                worksheet.Cells["Z10"].Value = "TOTAL COST";
 
                 // Audit info columns — only for Delivered + All or InvalidOnly
                 bool showVoidCancelColumns = viewModel.ReportType == "Delivered" && statusFilter != "ValidOnly";
 
                 if (showVoidCancelColumns)
                 {
-                    worksheet.Cells["Z10"].Value = "VOIDED BY";
-                    worksheet.Cells["AA10"].Value = "VOIDED DATE";
+                    worksheet.Cells["AA10"].Value = "VOIDED BY";
+                    worksheet.Cells["AB10"].Value = "VOIDED DATE";
                 }
 
                 int currentRow = 11;
-                string headerColumn = showVoidCancelColumns ? "AA10" : "Y10";
-                int grandTotalColumn = showVoidCancelColumns ? 27 : 25;
+                string headerColumn = showVoidCancelColumns ? "AB10" : "Z10";
+                int grandTotalColumn = showVoidCancelColumns ? 28 : 26;
                 decimal grandSumOfTotalFreightAmount = 0;
                 decimal grandTotalQuantity = 0;
                 decimal totalLiftedQuantity = 0;
@@ -1249,52 +1266,53 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         worksheet.Cells[currentRow, 3].Value = dr.CustomerOrderSlip?.CustomerType;
                         worksheet.Cells[currentRow, 4].Value = dr.DeliveryReceiptNo;
                         worksheet.Cells[currentRow, 5].Value = dr.PurchaseOrder!.ProductName;
-                        worksheet.Cells[currentRow, 6].Value = dr.Quantity;
-                        worksheet.Cells[currentRow, 7].Value = dr.CustomerOrderSlip?.Depot;
-                        worksheet.Cells[currentRow, 8].Value = dr.PurchaseOrder?.PurchaseOrderNo;
-                        worksheet.Cells[currentRow, 9].Value = dr.AuthorityToLoadNo;
-                        worksheet.Cells[currentRow, 10].Value = dr.CustomerOrderSlip?.CustomerOrderSlipNo;
-                        worksheet.Cells[currentRow, 11].Value = dr.Hauler?.SupplierName;
-                        worksheet.Cells[currentRow, 12].Value = dr.PurchaseOrder?.SupplierName;
-                        worksheet.Cells[currentRow, 13].Value = dr.CustomerOrderSlip?.DeliveryOption;
-                        worksheet.Cells[currentRow, 14].Value = freightCharge;
-                        worksheet.Cells[currentRow, 15].Value = ecc;
-                        worksheet.Cells[currentRow, 16].Value = totalFreightAmount;
-                        worksheet.Cells[currentRow, 17].Value = dr.CustomerOrderSlip?.OldCosNo;
-                        worksheet.Cells[currentRow, 18].Value = dr.ManualDrNo;
-                        worksheet.Cells[currentRow, 19].Value = rr?.ReceivingReportNo;
-                        worksheet.Cells[currentRow, 20].Value = rr?.QuantityReceived != 0
+                        worksheet.Cells[currentRow, 6].Value = dr.CustomerOrderSlip?.DeliveredPrice;
+                        worksheet.Cells[currentRow, 7].Value = dr.Quantity;
+                        worksheet.Cells[currentRow, 8].Value = dr.CustomerOrderSlip?.Depot;
+                        worksheet.Cells[currentRow, 9].Value = dr.PurchaseOrder?.PurchaseOrderNo;
+                        worksheet.Cells[currentRow, 10].Value = dr.AuthorityToLoadNo;
+                        worksheet.Cells[currentRow, 11].Value = dr.CustomerOrderSlip?.CustomerOrderSlipNo;
+                        worksheet.Cells[currentRow, 12].Value = dr.Hauler?.SupplierName;
+                        worksheet.Cells[currentRow, 13].Value = dr.PurchaseOrder?.SupplierName;
+                        worksheet.Cells[currentRow, 14].Value = dr.CustomerOrderSlip?.DeliveryOption;
+                        worksheet.Cells[currentRow, 15].Value = freightCharge;
+                        worksheet.Cells[currentRow, 16].Value = ecc;
+                        worksheet.Cells[currentRow, 17].Value = totalFreightAmount;
+                        worksheet.Cells[currentRow, 18].Value = dr.CustomerOrderSlip?.OldCosNo;
+                        worksheet.Cells[currentRow, 19].Value = dr.ManualDrNo;
+                        worksheet.Cells[currentRow, 20].Value = rr?.ReceivingReportNo;
+                        worksheet.Cells[currentRow, 21].Value = rr?.QuantityReceived != 0
                             ? rr?.Amount / rr?.QuantityReceived
                             : 0m;
-                        worksheet.Cells[currentRow, 21].Value = rr?.SupplierInvoiceNumber;
-                        worksheet.Cells[currentRow, 22].Value = rr?.WithdrawalCertificate;
+                        worksheet.Cells[currentRow, 22].Value = rr?.SupplierInvoiceNumber;
+                        worksheet.Cells[currentRow, 23].Value = rr?.WithdrawalCertificate;
 
                         if (viewModel.ReportType == "Delivered")
                         {
-                            worksheet.Cells[currentRow, 23].Value = dr.DeliveredDate;
-                            worksheet.Cells[currentRow, 23].Style.Numberformat.Format = "MMM/dd/yyyy";
-                            worksheet.Cells[currentRow, 24].Value = dr.Status == nameof(DRStatus.PendingDelivery) ? "IN TRANSIT" : dr.Status.ToUpper();
+                            worksheet.Cells[currentRow, 24].Value = dr.DeliveredDate;
+                            worksheet.Cells[currentRow, 24].Style.Numberformat.Format = "MMM/dd/yyyy";
+                            worksheet.Cells[currentRow, 25].Value = dr.Status == nameof(DRStatus.PendingDelivery) ? "IN TRANSIT" : dr.Status.ToUpper();
                         }
                         else
                         {
                             if (dr.HasReceivingReport)
                             {
                                 liftedQuantity = rr?.QuantityReceived ?? 0m;
-                                worksheet.Cells[currentRow, 23].Value = rr?.Date;
-                                worksheet.Cells[currentRow, 23].Style.Numberformat.Format = "MMM/dd/yyyy";
-                                worksheet.Cells[currentRow, 24].Value = liftedQuantity;
-                                worksheet.Cells[currentRow, 24].Style.Numberformat.Format = currencyFormatTwoDecimal;
+                                worksheet.Cells[currentRow, 24].Value = rr?.Date;
+                                worksheet.Cells[currentRow, 24].Style.Numberformat.Format = "MMM/dd/yyyy";
+                                worksheet.Cells[currentRow, 25].Value = liftedQuantity;
+                                worksheet.Cells[currentRow, 25].Style.Numberformat.Format = currencyFormatTwoDecimal;
                             }
                         }
 
-                        worksheet.Cells[currentRow, 25].Value = totalAmount;
-                        worksheet.Cells[currentRow, 25].Style.Numberformat.Format = currencyFormatTwoDecimal;
+                        worksheet.Cells[currentRow, 26].Value = totalAmount;
+                        worksheet.Cells[currentRow, 26].Style.Numberformat.Format = currencyFormatTwoDecimal;
 
                         if (showVoidCancelColumns)
                         {
-                            worksheet.Cells[currentRow, 26].Value = dr.VoidedBy;
-                            worksheet.Cells[currentRow, 27].Value = dr.VoidedDate;
-                            worksheet.Cells[currentRow, 27].Style.Numberformat.Format = "MMM/dd/yyyy";
+                            worksheet.Cells[currentRow, 27].Value = dr.VoidedBy;
+                            worksheet.Cells[currentRow, 28].Value = dr.VoidedDate;
+                            worksheet.Cells[currentRow, 28].Style.Numberformat.Format = "MMM/dd/yyyy";
                         }
 
                         currentRow++;
@@ -1313,23 +1331,23 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 {
                     // Don't add record of other dates if entry is "as of" and "delivered"
                     var entriesToday = deliveryReceipts.Where(t => t.Date == viewModel.DateFrom).ToList();
-                    worksheet.Cells[currentRow, 6].Value = entriesToday.Sum(dr => dr.Quantity);
-                    worksheet.Cells[currentRow, 16].Value = entriesToday.Sum(dr => dr.FreightAmount);
+                    worksheet.Cells[currentRow, 7].Value = entriesToday.Sum(dr => dr.Quantity);
+                    worksheet.Cells[currentRow, 17].Value = entriesToday.Sum(dr => dr.FreightAmount);
                 }
                 else
                 {
-                    worksheet.Cells[currentRow, 6].Value = grandTotalQuantity;
-                    worksheet.Cells[currentRow, 16].Value = grandSumOfTotalFreightAmount;
+                    worksheet.Cells[currentRow, 7].Value = grandTotalQuantity;
+                    worksheet.Cells[currentRow, 17].Value = grandSumOfTotalFreightAmount;
 
                     if (viewModel.ReportType != "Delivered" && totalLiftedQuantity != 0)
                     {
-                        worksheet.Cells[currentRow, 24].Value = totalLiftedQuantity;
-                        worksheet.Cells[currentRow, 24].Style.Numberformat.Format = currencyFormatTwoDecimal;
+                        worksheet.Cells[currentRow, 25].Value = totalLiftedQuantity;
+                        worksheet.Cells[currentRow, 25].Style.Numberformat.Format = currencyFormatTwoDecimal;
                     }
                     if (grandTotalAmount != 0)
                     {
-                        worksheet.Cells[currentRow, 25].Value = grandTotalAmount;
-                        worksheet.Cells[currentRow, 25].Style.Numberformat.Format = currencyFormatTwoDecimal;
+                        worksheet.Cells[currentRow, 26].Value = grandTotalAmount;
+                        worksheet.Cells[currentRow, 26].Style.Numberformat.Format = currencyFormatTwoDecimal;
                     }
                 }
 
@@ -1363,8 +1381,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 worksheet.Cells[currentRow, 8].Value = "CNC SUPERVISOR";
 
                 // Styling and formatting
-                worksheet.Cells["N,O,T"].Style.Numberformat.Format = "#,##0.0000";
-                worksheet.Cells["F,P"].Style.Numberformat.Format = "#,##0.00";
+                worksheet.Cells["F,O,P,U"].Style.Numberformat.Format = "#,##0.0000";
+                worksheet.Cells["G,Q"].Style.Numberformat.Format = "#,##0.00";
 
                 using (var range = worksheet.Cells[$"A10:{headerColumn}"])
                 {
