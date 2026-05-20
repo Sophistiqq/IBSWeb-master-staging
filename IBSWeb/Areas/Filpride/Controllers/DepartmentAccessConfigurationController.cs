@@ -84,9 +84,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             s.Module.ToLower().Contains(searchValue) ||
                             s.Action.ToLower().Contains(searchValue) ||
                             s.CreatedBy.ToLower().Contains(searchValue) ||
-                            s.CreatedDate.ToString(SD.Date_Format).ToLower().Contains(searchValue) ||
-                            s.EditedBy.ToLower().Contains(searchValue) ||
-                            s.EditedDate.ToString(SD.Date_Format).ToLower().Contains(searchValue)
+                            s.EditedBy.ToLower().Contains(searchValue)
                             );
                 }
 
