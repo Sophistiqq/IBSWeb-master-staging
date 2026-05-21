@@ -1529,7 +1529,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 creditMemo.PostedDate = null;
                 creditMemo.Status = nameof(Status.Pending);
 
-                if (creditMemo.SalesInvoiceId != null || creditMemo.SalesInvoiceId != 0)
+                if (creditMemo.SalesInvoiceId.HasValue)
                 {
                     await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideSalesBook>(x => x.SerialNo == creditMemo.CreditMemoNo, cancellationToken);
                     await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideGeneralLedgerBook>(x => x.Reference == creditMemo.CreditMemoNo, cancellationToken);

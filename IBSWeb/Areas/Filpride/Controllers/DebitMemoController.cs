@@ -1466,7 +1466,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 debitMemo.PostedDate = null;
                 debitMemo.Status = nameof(Status.Pending);
 
-                if (debitMemo.SalesInvoiceId != null || debitMemo.SalesInvoiceId != 0)
+                if (debitMemo.SalesInvoiceId.HasValue)
                 {
                     await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideSalesBook>(x => x.SerialNo == debitMemo.DebitMemoNo, cancellationToken);
                     await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideGeneralLedgerBook>(x => x.Reference == debitMemo.DebitMemoNo, cancellationToken);

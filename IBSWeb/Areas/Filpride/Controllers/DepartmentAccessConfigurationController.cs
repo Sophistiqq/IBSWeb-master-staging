@@ -8,6 +8,7 @@ using IBS.Models.MasterFile;
 using IBS.Services.Attributes;
 using IBS.Utility.Constants;
 using IBS.Utility.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -17,6 +18,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 {
     [Area(nameof(Filpride))]
     [CompanyAuthorize(nameof(Filpride))]
+    [Authorize(Roles = "Admin")]
     public class DepartmentAccessConfigurationController: Controller
     {
         private readonly ApplicationDbContext _dbContext;
@@ -85,8 +87,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             s.Module.ToLower().Contains(searchValue) ||
                             s.Action.ToLower().Contains(searchValue) ||
                             s.CreatedBy.ToLower().Contains(searchValue) ||
-                            s.EditedBy.ToLower().Contains(searchValue)
-                            );
+                            (s.EditedBy != null && s.EditedBy.ToLower().Contains(searchValue)));
                 }
 
                 // Sorting
@@ -151,11 +152,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
             {
                 #region Saving Default Entries
 
-                var validateIfModuleActionIsAlreadyExist = await _unitOfWork.DepartmentAccess.GetAllAsync(x => x.Action == viewModel.Action, cancellationToken);
+                var validateIfModuleActionIsAlreadyExist = await _unitOfWork.DepartmentAccess
+                    .GetAllAsync(x =>
+                            x.Action == viewModel.Action,
+                        cancellationToken);
                 if (validateIfModuleActionIsAlreadyExist.Any())
                 {
                     TempData["error"] = "The action for this module has already been created. Please edit the existing entry to add access.";
-                    return RedirectToAction(nameof(Index));
+                    return View(viewModel);
                 }
 
                 var model = new DepartmentAccess
@@ -233,6 +237,16 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 if (existingRecord == null)
                 {
                     return NotFound();
+                }
+
+                var validateIfModuleActionIsAlreadyExist = await _unitOfWork.DepartmentAccess
+                    .GetAllAsync(x =>
+                        x.Action == viewModel.Action,
+                        cancellationToken);
+                if (validateIfModuleActionIsAlreadyExist.Any() && existingRecord.Action != viewModel.Action)
+                {
+                    TempData["error"] = "The action for this module has already been created. Please edit the existing entry to add access.";
+                    return View(viewModel);
                 }
 
                 existingRecord.Module = viewModel.Module;

@@ -11,10 +11,13 @@ namespace IBS.Models.MasterFile
 
         public string[] Department { get; set; } = [];
 
+        [StringLength(100)]
         public string Module { get; set; } = string.Empty;
 
+        [StringLength(100)]
         public string Action { get; set; } = string.Empty;
 
+        [StringLength(100)]
         public string CreatedBy { get; set; } = string.Empty;
 
 
@@ -22,10 +25,11 @@ namespace IBS.Models.MasterFile
         public DateTime CreatedDate { get; set; } = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
             TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila"));
 
-        public string EditedBy { get; set; } = string.Empty;
+        [StringLength(100)]
+        public string? EditedBy { get; set; }
 
         [Column(TypeName = "timestamp without time zone")]
-        public DateTime EditedDate { get; set; } = DateTime.MinValue;
+        public DateTime? EditedDate { get; set; }
 
     }
 }
