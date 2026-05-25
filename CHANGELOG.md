@@ -6,6 +6,14 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 
 ---
 
+## [v2.7.1] - 2026-05-25
+
+### Fixed
+- Fixed Filpride receiving report cost update entries for COD and prepaid purchase orders so Expanded Withholding Tax advance offsets are applied consistently during both incremental and reversal flows.
+- Fixed Filpride receiving report cost update ledger entries to use the full net-of-VAT cost adjustment amount for related COGS and inventory sales postings.
+
+---
+
 ## [v2.7.0] - 2026-05-25
 
 ### Added
