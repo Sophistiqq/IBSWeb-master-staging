@@ -1425,7 +1425,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     .GetGeneralLedgerBooks(model.DateFrom, model.DateTo, companyClaims, cancellationToken);
 
                 var filteredData = generalBooks
-                    .Where(gb => gb.Description.Contains("update commission", StringComparison.CurrentCultureIgnoreCase))
+                    .Where(gb =>
+                        gb.Description.Contains("update commission", StringComparison.CurrentCultureIgnoreCase) ||
+                        gb.Description.Contains("cost of money", StringComparison.CurrentCultureIgnoreCase))
                     .ToList();
 
                 if (filteredData.Count == 0)
