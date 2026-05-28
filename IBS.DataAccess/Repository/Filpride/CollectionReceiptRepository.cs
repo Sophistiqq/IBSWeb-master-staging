@@ -745,6 +745,7 @@ namespace IBS.DataAccess.Repository.Filpride
             {
                 var reversalEntry = new FilprideGeneralLedgerBook
                 {
+                    Date = DateOnly.FromDateTime(DateTimeHelper.GetCurrentPhilippineTime()),
                     Reference = originalEntry.Reference,
                     AccountNo = originalEntry.AccountNo,
                     AccountTitle = originalEntry.AccountTitle,
@@ -760,6 +761,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     SubAccountId = originalEntry.SubAccountId,
                     SubAccountName = originalEntry.SubAccountName,
                     ModuleType = originalEntry.ModuleType,
+
                 };
 
                 reversalEntries.Add(reversalEntry);
