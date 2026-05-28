@@ -761,7 +761,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     SubAccountId = originalEntry.SubAccountId,
                     SubAccountName = originalEntry.SubAccountName,
                     ModuleType = originalEntry.ModuleType,
-
                 };
 
                 reversalEntries.Add(reversalEntry);
