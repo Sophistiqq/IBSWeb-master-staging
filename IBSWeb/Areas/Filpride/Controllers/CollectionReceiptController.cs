@@ -276,38 +276,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     .Where(rd => rd.CollectionReceiptId == model.CollectionReceiptId)
                     .ToListAsync(cancellationToken);
 
-                await _unitOfWork.FilprideCollectionReceipt.DepositAsync(model, cancellationToken);
-
-                foreach (var receipt in model.ReceiptDetails!)
-                {
-                    var salesInvoice = await _unitOfWork.FilprideSalesInvoice
-                                           .GetAsync(x => x.SalesInvoiceNo == receipt.InvoiceNo
-                                                          && x.Company == model.Company, cancellationToken);
-
-                    if (salesInvoice == null)
-                    {
-                        continue;
-                    }
-
-                    var afterDueDate = salesInvoice.DueDate.AddDays(1);
-                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(afterDueDate, depositDate);
-                    var daysDelayed = depositDate.DayNumber - afterDueDate.DayNumber - getHolidays.Count;
-
-                    if (daysDelayed <= 0 || salesInvoice.DeliveryReceipt == null || salesInvoice.DeliveryReceipt?.CommissionAmount <= 0)
-                    {
-                        continue;
-                    }
-
-                    var dr = salesInvoice.DeliveryReceipt!;
-                    var paymentAmount = model.CashAmount + model.CheckAmount + model.ManagersCheckAmount;
-
-                    //Formula: Payment Amount x 3% x Days Delayed / 360
-                    var costOfMoney = paymentAmount * .03m * daysDelayed / 360m;
-
-                    await _unitOfWork.FilprideCollectionReceipt.ApplyCostOfMoney(dr, costOfMoney,
-                        GetUserFullName(), depositDate, cancellationToken);
-                }
-
                 #region --Audit Trail Recording
 
                 FilprideAuditTrail auditTrailBook = new(GetUserFullName(),
@@ -2669,10 +2637,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             try
             {
                 model.DepositedDate = null;
-                model.ClearedDate = null;
                 model.Status = nameof(CollectionReceiptStatus.Returned);
-
-                await _unitOfWork.FilprideCollectionReceipt.ReturnedCheck(model.CollectionReceiptNo!, model.Company, GetUserFullName(), cancellationToken);
 
                 #region --Audit Trail Recording
 
@@ -2727,8 +2692,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 model.DepositedDate = redepositDate;
                 model.Status = nameof(CollectionReceiptStatus.Redeposited);
 
-                await _unitOfWork.FilprideCollectionReceipt.RedepositAsync(model, cancellationToken);
-
                 #region --Audit Trail Recording
 
                 FilprideAuditTrail auditTrailBook = new(GetUserFullName(),
@@ -2781,6 +2744,43 @@ namespace IBSWeb.Areas.Filpride.Controllers
             {
                 model.ClearedDate = clearingDate;
                 model.Status = nameof(CollectionReceiptStatus.Cleared);
+
+                if (model.DepositedDate == null)
+                {
+                    throw new InvalidOperationException("Deposited date cannot be null.");
+                }
+
+                await _unitOfWork.FilprideCollectionReceipt.DepositAsync(model, cancellationToken);
+
+                foreach (var receipt in model.ReceiptDetails!)
+                {
+                    var salesInvoice = await _unitOfWork.FilprideSalesInvoice
+                        .GetAsync(x => x.SalesInvoiceNo == receipt.InvoiceNo
+                                       && x.Company == model.Company, cancellationToken);
+
+                    if (salesInvoice == null)
+                    {
+                        continue;
+                    }
+
+                    var afterDueDate = salesInvoice.DueDate.AddDays(1);
+                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(afterDueDate, model.DepositedDate.Value);
+                    var daysDelayed = model.DepositedDate.Value.DayNumber - afterDueDate.DayNumber - getHolidays.Count;
+
+                    if (daysDelayed <= 0 || salesInvoice.DeliveryReceipt == null || salesInvoice.DeliveryReceipt?.CommissionAmount <= 0)
+                    {
+                        continue;
+                    }
+
+                    var dr = salesInvoice.DeliveryReceipt!;
+                    var paymentAmount = model.CashAmount + model.CheckAmount + model.ManagersCheckAmount;
+
+                    //Formula: Payment Amount x 3% x Days Delayed / 360
+                    var costOfMoney = paymentAmount * .03m * daysDelayed / 360m;
+
+                    await _unitOfWork.FilprideCollectionReceipt.ApplyCostOfMoney(dr, costOfMoney,
+                        GetUserFullName(), model.DepositedDate.Value, cancellationToken);
+                }
 
                 #region --Audit Trail Recording
 
