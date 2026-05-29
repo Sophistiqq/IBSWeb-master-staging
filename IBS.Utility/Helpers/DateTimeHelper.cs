@@ -1,5 +1,6 @@
 using System.Text.Json;
 using IBS.DTOs;
+using Microsoft.Extensions.Configuration;
 
 namespace IBS.Utility.Helpers
 {
@@ -10,6 +11,14 @@ namespace IBS.Utility.Helpers
         private static readonly object _lock = new();
         private static DateTime? _lastGeneratedTime;
         private static readonly HttpClient _httpClient = new();
+        private static string _calendarificApiKey = string.Empty;
+
+        public static void Initialize(IConfiguration configuration)
+        {
+            _calendarificApiKey = configuration["Calendarific:ApiKey"]
+                                  ?? throw new InvalidOperationException("Calendarific API key is not configured.");
+        }
+
 
         public static DateTime GetCurrentPhilippineTime()
         {
@@ -66,7 +75,7 @@ namespace IBS.Utility.Helpers
             return philippineTime.ToString(format);
         }
 
-        public static async Task<List<DateOnly>> GetNonWorkingDays(DateOnly startDate, DateOnly endDate, string countryCode)
+        public static async Task<List<DateOnly>> GetNonWorkingDays(DateOnly startDate, DateOnly endDate, string countryCode = "PH")
         {
             var nonWorkingDays = new List<DateOnly>();
 
@@ -75,26 +84,37 @@ namespace IBS.Utility.Helpers
             // Get holidays for all years in the range
             for (int year = startDate.Year; year <= endDate.Year; year++)
             {
-                using var response = await _httpClient.GetAsync($"https://date.nager.at/api/v3/publicholidays/{year}/{countryCode}");
+                var url = $"https://calendarific.com/api/v2/holidays?api_key={_calendarificApiKey}&country={countryCode}&year={year}";
 
-                if (response.IsSuccessStatusCode)
+                using var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    await using var jsonStream = await response.Content.ReadAsStreamAsync();
-                    var items = JsonSerializer.Deserialize<List<PublicHolidayDto>>(jsonStream, jsonSerializerOptions);
+                    continue;
+                }
 
-                    if (items is not null)
-                    {
-                        nonWorkingDays.AddRange(
-                            items.Select(h => DateOnly.FromDateTime(h.Date))
-                        );
-                    }
+                await using var jsonStream = await response.Content.ReadAsStreamAsync();
+                var result = JsonSerializer.Deserialize<CalendarificResponse>(jsonStream, jsonSerializerOptions);
+
+                if (result?.Response?.Holidays is not null)
+                {
+                    nonWorkingDays.AddRange(
+                        result.Response.Holidays
+                            .Where(h =>
+                                h.Type.Contains("National holiday") ||
+                                h.Type.Contains("Special holiday")) // Filter to national/public holidays only
+                            .Select(h => DateOnly.Parse(h.Date.Iso))
+                    );
                 }
             }
 
-            // Filter holidays within range
-            nonWorkingDays = nonWorkingDays.Where(d => d >= startDate && d <= endDate).ToList();
+            // Filter holidays within range and remove duplicates
+            nonWorkingDays = nonWorkingDays
+                .Where(d => d >= startDate && d <= endDate)
+                .Distinct()
+                .ToList();
 
-            // Add weekends that are not already holidays
+            // Add weekends that are not already in the list
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
                 if ((date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
