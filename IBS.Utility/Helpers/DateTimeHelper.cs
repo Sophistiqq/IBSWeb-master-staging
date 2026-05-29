@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using IBS.DTOs;
 using Microsoft.Extensions.Configuration;
@@ -12,9 +13,6 @@ namespace IBS.Utility.Helpers
         private static DateTime? _lastGeneratedTime;
         private static readonly HttpClient _httpClient = new();
         private static string _calendarificApiKey = string.Empty;
-using System.Collections.Concurrent;
-// ... other usings ...
-
         private static readonly ConcurrentDictionary<(string country, int year), List<DateOnly>> _holidayCache = new();
 
         public static void Initialize(IConfiguration configuration)
