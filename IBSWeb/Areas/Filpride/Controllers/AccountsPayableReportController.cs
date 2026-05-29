@@ -5059,9 +5059,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 foreach (var sameSupplierGroup in groupBySupplierTermsAndType)
                 {
-                    var isVatable = sameSupplierGroup.First().VatType == SD.VatType_Vatable;
-                    var isTaxable = sameSupplierGroup.First().TaxType == SD.TaxType_WithTax;
-                    var ewtPercentage = 0m;
                     row += 2;
                     worksheet.Cells[row, 2].Value = sameSupplierGroup.First().Supplier!.SupplierName;
                     worksheet.Cells[row, 2].Style.Font.Bold = true;
@@ -5098,6 +5095,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                 decimal liftedThisMonth = 0m;
                                 decimal unliftedThisMonth = 0m;
                                 decimal grossOfLiftedThisMonth = 0m;
+                                decimal totalEwt = 0m;
 
                                 foreach (var po in aGroupByProduct)
                                 {
@@ -5105,6 +5103,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                     decimal rrQtyForLiftedThisMonth = 0m;
                                     decimal currentPoQuantity = po.Quantity;
                                     allPoTotal += currentPoQuantity;
+                                    var isTaxable = po.TaxType == SD.TaxType_WithTax;
+                                    var isVatable = po.VatType == SD.VatType_Vatable;
 
                                     if (po.ReceivingReports!.Count != 0)
                                     {
@@ -5119,13 +5119,16 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                                 rrQtyForLiftedThisMonth += rr.QuantityReceived;
                                                 grossOfLiftedThisMonth += rr.Amount;
                                             }
-                                        }
 
-                                        ewtPercentage = po.ReceivingReports!
-                                            .Where(rr => rr.Date.Month == monthYear.Month && rr.Date.Year == monthYear.Year)
-                                            .Select(r => r.TaxPercentage)
-                                            .DefaultIfEmpty(0m)
-                                            .Average();
+                                            var netOfVat = isVatable
+                                                ? repoCalculator.ComputeNetOfVat(rr.Amount)
+                                                : grossOfLiftedThisMonth;
+                                            var ewt = isTaxable
+                                                ? repoCalculator.ComputeEwtAmount(netOfVat, rr.TaxPercentage)
+                                                : 0m;
+
+                                            totalEwt += ewt;
+                                        }
                                     }
 
                                     unliftedLastMonth += currentPoQuantity - rrQtyForUnliftedLastMonth;
@@ -5138,14 +5141,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                     poSubtotal += allPoTotal;
                                     tempForGrandTotal += allPoTotal;
                                 }
-
-                                // operations per product
-                                var netOfVat = isVatable
-                                    ? repoCalculator.ComputeNetOfVat(grossOfLiftedThisMonth)
-                                    : grossOfLiftedThisMonth;
-                                var ewt = isTaxable
-                                    ? repoCalculator.ComputeEwtAmount(netOfVat, ewtPercentage)
-                                    : 0m;
 
                                 // WRITE ORIGINAL PO VOLUME
                                 worksheet.Cells[row, 7].Value = allPoTotal;
@@ -5195,7 +5190,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         liftedThisMonthGrandTotalBiodiesel += liftedThisMonth;
                                         unliftedThisMonthGrandTotalBiodiesel += unliftedThisMonth;
                                         grossAmountGrandTotalBiodiesel += grossOfLiftedThisMonth;
-                                        ewtGrandTotalBiodiesel += ewt;
+                                        ewtGrandTotalBiodiesel += totalEwt;
                                         break;
 
                                     case "ECONOGAS":
@@ -5203,7 +5198,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         liftedThisMonthGrandTotalEconogas += liftedThisMonth;
                                         unliftedThisMonthGrandTotalEconogas += unliftedThisMonth;
                                         grossAmountGrandTotalEconogas += grossOfLiftedThisMonth;
-                                        ewtGrandTotalEconogas += ewt;
+                                        ewtGrandTotalEconogas += totalEwt;
                                         break;
 
                                     case "ENVIROGAS":
@@ -5211,7 +5206,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         liftedThisMonthGrandTotalEnvirogas += liftedThisMonth;
                                         unliftedThisMonthGrandTotalEnvirogas += unliftedThisMonth;
                                         grossAmountGrandTotalEnvirogas += grossOfLiftedThisMonth;
-                                        ewtGrandTotalEnvirogas += ewt;
+                                        ewtGrandTotalEnvirogas += totalEwt;
                                         break;
                                 }
 
@@ -5220,21 +5215,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                 liftedThisMonthSubtotal += liftedThisMonth;
                                 unliftedThisMonthSubtotal += unliftedThisMonth;
                                 grossAmountSubtotal += grossOfLiftedThisMonth;
-                                ewtAmountSubtotal += ewt;
+                                ewtAmountSubtotal += totalEwt;
 
                                 // write per product: price, gross, ewt, net
                                 var price = liftedThisMonth > 0
                                     ? grossOfLiftedThisMonth / liftedThisMonth
                                     : 0m;
-                                var priceNetOfVat = isVatable
-                                    ? repoCalculator.ComputeNetOfVat(price)
-                                    : price;
+                                var priceNetOfVat = repoCalculator.ComputeNetOfVat(price);
 
                                 worksheet.Cells[row, 11].Value = priceNetOfVat;
                                 worksheet.Cells[row, 12].Value = price;
                                 worksheet.Cells[row, 13].Value = grossOfLiftedThisMonth;
-                                worksheet.Cells[row, 14].Value = ewt;
-                                worksheet.Cells[row, 15].Value = grossOfLiftedThisMonth - ewt;
+                                worksheet.Cells[row, 14].Value = totalEwt;
+                                worksheet.Cells[row, 15].Value = grossOfLiftedThisMonth - totalEwt;
                                 using var range = worksheet.Cells[row, 11, row, 15];
                                 range.Style.Numberformat.Format = currencyFormatTwoDecimal;
                             }
@@ -5270,9 +5263,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     if (liftedThisMonthSubtotal != 0)
                     {
                         var price = grossAmountSubtotal / liftedThisMonthSubtotal;
-                        var priceNetOfVat = isVatable
-                            ? repoCalculator.ComputeNetOfVat(price)
-                            : price;
+                        var priceNetOfVat = repoCalculator.ComputeNetOfVat(price);
                         worksheet.Cells[row, 11].Value = priceNetOfVat;
                         worksheet.Cells[row, 12].Value = price;
                         worksheet.Cells[row, 13].Value = grossAmountSubtotal;
@@ -5460,7 +5451,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 {
                     var firstRecord = aGroupBySupplier.FirstOrDefault();
                     var isVatable = firstRecord!.VatType == SD.VatType_Vatable;
-                    var isTaxable = firstRecord.TaxType == SD.TaxType_WithTax;
                     DateOnly monthYearTemp = new DateOnly(monthYear.Year, monthYear.Month, 1);
                     DateOnly followingMonth = monthYearTemp.AddMonths(1);
                     var poGrandTotal = 0m;
@@ -5575,7 +5565,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                 ? repoCalculator.ComputeNetOfVat(grossAmount)
                                 : grossAmount;
 
-                            var ewt = isTaxable
+                            var ewt = ewtPercentage != 0m
                                 ? repoCalculator.ComputeEwtAmount(netOfVat, ewtPercentage)
                                 : 0m;
 
