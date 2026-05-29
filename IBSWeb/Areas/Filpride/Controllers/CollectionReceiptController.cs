@@ -288,8 +288,10 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     {
                         continue;
                     }
-                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(salesInvoice.DueDate, depositDate);
-                    var daysDelayed = depositDate.DayNumber - salesInvoice.DueDate.DayNumber - getHolidays.Count;
+
+                    var afterDueDate = salesInvoice.DueDate.AddDays(1);
+                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(afterDueDate, depositDate);
+                    var daysDelayed = depositDate.DayNumber - afterDueDate.DayNumber - getHolidays.Count;
 
                     if (daysDelayed <= 0 || salesInvoice.DeliveryReceipt == null || salesInvoice.DeliveryReceipt?.CommissionAmount <= 0)
                     {
