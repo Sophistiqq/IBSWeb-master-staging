@@ -2763,9 +2763,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         continue;
                     }
 
-                    var afterDueDate = salesInvoice.DueDate.AddDays(1);
-                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(afterDueDate, model.DepositedDate.Value);
-                    var daysDelayed = model.DepositedDate.Value.DayNumber - afterDueDate.DayNumber - getHolidays.Count;
+                    var getHolidays = await DateTimeHelper.GetNonWorkingDays(salesInvoice.DueDate, model.DepositedDate.Value);
+                    var daysDelayed = model.DepositedDate.Value.DayNumber - salesInvoice.DueDate.DayNumber - getHolidays.Count;
 
                     if (daysDelayed <= 0 || salesInvoice.DeliveryReceipt == null || salesInvoice.DeliveryReceipt?.CommissionAmount <= 0)
                     {
