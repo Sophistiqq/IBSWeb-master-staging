@@ -1394,7 +1394,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     EntityType = Module.DeliveryReceipt,
                     EntityNo = deliveryReceipt.DeliveryReceiptNo,
                     AdjustmentType = LockedPeriodAdjustmentType.Freight,
-                    OldValue = GetUnitValue(deliveryReceipt.FreightAmount - signedDifference, deliveryReceipt.Quantity),
+                    OldValue = GetUnitValue(deliveryReceipt.FreightAmount - (deliveryReceipt.ECC * deliveryReceipt.Quantity) - signedDifference, deliveryReceipt.Quantity),
                     NewValue = deliveryReceipt.Freight,
                     AdjustmentValue = signedDifference,
                     Reason = "Update freight",
