@@ -1,5 +1,6 @@
 using IBS.DataAccess.Data;
 using IBS.DataAccess.Repository.Filpride.IRepository;
+using IBS.DTOs;
 using IBS.Models.Enums;
 using IBS.Models.Filpride.Books;
 using IBS.Models.Filpride.Integrated;
@@ -1115,17 +1116,19 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
-                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
-                    Module.DeliveryReceipt,
-                    deliveredDate,
-                    LockedPeriodAdjustmentType.SellingPrice,
-                    deliveryReceipt.DeliveryReceiptNo,
-                    GetUnitValue(deliveryReceipt.TotalAmount - signedDifference, deliveryReceipt.Quantity),
-                    GetUnitValue(deliveryReceipt.TotalAmount, deliveryReceipt.Quantity),
-                    signedDifference,
-                    "Update selling price in COS",
-                    userName,
-                    cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(new LockedPeriodAdjustmentRequestDto
+                {
+                    Module = Module.DeliveryReceipt,
+                    TransactionDate = deliveredDate,
+                    EntityType = Module.DeliveryReceipt,
+                    EntityNo = deliveryReceipt.DeliveryReceiptNo,
+                    AdjustmentType = LockedPeriodAdjustmentType.SellingPrice,
+                    OldValue = GetUnitValue(deliveryReceipt.TotalAmount - signedDifference, deliveryReceipt.Quantity),
+                    NewValue = GetUnitValue(deliveryReceipt.TotalAmount, deliveryReceipt.Quantity),
+                    AdjustmentValue = signedDifference,
+                    Reason = "Update selling price in COS",
+                    CreatedBy = userName
+                }, cancellationToken);
 
                 #endregion General Ledger Book Recording
 
@@ -1237,17 +1240,19 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
-                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
-                    Module.DeliveryReceipt,
-                    deliveredDate,
-                    LockedPeriodAdjustmentType.Commission,
-                    deliveryReceipt.DeliveryReceiptNo,
-                    GetUnitValue(deliveryReceipt.CommissionAmount - signedDifference, deliveryReceipt.Quantity),
-                    deliveryReceipt.CommissionRate,
-                    signedDifference,
-                    "Update commission",
-                    userName,
-                    cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(new LockedPeriodAdjustmentRequestDto
+                {
+                    Module = Module.DeliveryReceipt,
+                    TransactionDate = deliveredDate,
+                    EntityType = Module.DeliveryReceipt,
+                    EntityNo = deliveryReceipt.DeliveryReceiptNo,
+                    AdjustmentType = LockedPeriodAdjustmentType.Commission,
+                    OldValue = GetUnitValue(deliveryReceipt.CommissionAmount - signedDifference, deliveryReceipt.Quantity),
+                    NewValue = deliveryReceipt.CommissionRate,
+                    AdjustmentValue = signedDifference,
+                    Reason = "Update commission",
+                    CreatedBy = userName
+                }, cancellationToken);
                 await _db.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex)
@@ -1382,17 +1387,19 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
-                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
-                    Module.DeliveryReceipt,
-                    deliveredDate,
-                    LockedPeriodAdjustmentType.Freight,
-                    deliveryReceipt.DeliveryReceiptNo,
-                    GetUnitValue(deliveryReceipt.FreightAmount - signedDifference, deliveryReceipt.Quantity),
-                    deliveryReceipt.Freight,
-                    signedDifference,
-                    "Update freight",
-                    userName,
-                    cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(new LockedPeriodAdjustmentRequestDto
+                {
+                    Module = Module.DeliveryReceipt,
+                    TransactionDate = deliveredDate,
+                    EntityType = Module.DeliveryReceipt,
+                    EntityNo = deliveryReceipt.DeliveryReceiptNo,
+                    AdjustmentType = LockedPeriodAdjustmentType.Freight,
+                    OldValue = GetUnitValue(deliveryReceipt.FreightAmount - signedDifference, deliveryReceipt.Quantity),
+                    NewValue = deliveryReceipt.Freight,
+                    AdjustmentValue = signedDifference,
+                    Reason = "Update freight",
+                    CreatedBy = userName
+                }, cancellationToken);
                 await _db.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex)

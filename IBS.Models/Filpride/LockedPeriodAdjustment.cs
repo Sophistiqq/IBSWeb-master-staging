@@ -20,8 +20,6 @@ namespace IBS.Models.Filpride
         [Column(TypeName = "varchar(50)")]
         public string EntityTypeNo { get; set; } = string.Empty;
 
-        public Module Module { get; set; }
-
         [Column(TypeName = "numeric(18,4)")]
         public decimal OldValue { get; set; }
 

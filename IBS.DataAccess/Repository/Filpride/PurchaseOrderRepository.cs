@@ -1,5 +1,6 @@
 using IBS.DataAccess.Data;
 using IBS.DataAccess.Repository.Filpride.IRepository;
+using IBS.DTOs;
 using IBS.Models.Enums;
 using IBS.Models.Filpride.AccountsPayable;
 using IBS.Models.Filpride.Integrated;
@@ -299,17 +300,19 @@ namespace IBS.DataAccess.Repository.Filpride
                 await unitOfWork.FilprideReceivingReport.CreateEntriesForUpdatingCost(
                     receivingReport, difference, model.ApprovedBy!, cancellationToken);
 
-                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
-                    Module.ReceivingReport,
-                    receivingReport.Date,
-                    LockedPeriodAdjustmentType.UnitCost,
-                    receivingReport.ReceivingReportNo!,
-                    oldUnitCost,
-                    model.TriggeredPrice,
-                    difference,
-                    "Update approved unit cost in PO",
-                    model.ApprovedBy!,
-                    cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(new LockedPeriodAdjustmentRequestDto
+                {
+                    Module = Module.ReceivingReport,
+                    TransactionDate = receivingReport.Date,
+                    EntityType = Module.ReceivingReport,
+                    EntityNo = receivingReport.ReceivingReportNo!,
+                    AdjustmentType = LockedPeriodAdjustmentType.UnitCost,
+                    OldValue = oldUnitCost,
+                    NewValue = model.TriggeredPrice,
+                    AdjustmentValue = difference,
+                    Reason = "Update approved unit cost in PO",
+                    CreatedBy = model.ApprovedBy!
+                }, cancellationToken);
             }
 
             // Recalculate inventory once at the end

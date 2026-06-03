@@ -1,6 +1,6 @@
+using IBS.DTOs;
 using IBS.DataAccess.Data;
 using IBS.DataAccess.Repository.Filpride.IRepository;
-using IBS.Models.Enums;
 using IBS.Models.Filpride;
 using IBS.Utility.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -17,28 +17,20 @@ namespace IBS.DataAccess.Repository.Filpride
         }
 
         public async Task AddIfPeriodPostedAsync(
-            Module module,
-            DateOnly transactionDate,
-            LockedPeriodAdjustmentType adjustmentType,
-            string entityNo,
-            decimal oldValue,
-            decimal newValue,
-            decimal adjustmentValue,
-            string reason,
-            string createdBy,
+            LockedPeriodAdjustmentRequestDto request,
             CancellationToken cancellationToken = default)
         {
-            if (adjustmentValue == 0m)
+            if (request.AdjustmentValue == 0m)
             {
                 return;
             }
 
             var isPeriodPosted = await _db.PostedPeriods
                 .AnyAsync(m =>
-                    m.Module == module.ToString() &&
+                    m.Module == request.Module.ToString() &&
                     m.IsPosted &&
-                    m.Year == transactionDate.Year &&
-                    m.Month == transactionDate.Month,
+                    m.Year == request.TransactionDate.Year &&
+                    m.Month == request.TransactionDate.Month,
                     cancellationToken);
 
             if (!isPeriodPosted)
@@ -48,15 +40,15 @@ namespace IBS.DataAccess.Repository.Filpride
 
             await dbSet.AddAsync(new LockedPeriodAdjustment
             {
-                Period = new DateOnly(transactionDate.Year, transactionDate.Month, 1),
-                AdjustmentType = adjustmentType,
-                EntityTypeNo = entityNo,
-                Module = module,
-                OldValue = oldValue,
-                NewValue = newValue,
-                AdjustmentValue = adjustmentValue,
-                Reason = reason,
-                CreatedBy = createdBy,
+                Period = new DateOnly(request.TransactionDate.Year, request.TransactionDate.Month, 1),
+                EntityType = request.EntityType,
+                EntityTypeNo = request.EntityNo,
+                AdjustmentType = request.AdjustmentType,
+                OldValue = request.OldValue,
+                NewValue = request.NewValue,
+                AdjustmentValue = request.AdjustmentValue,
+                Reason = request.Reason,
+                CreatedBy = request.CreatedBy,
                 CreatedDate = DateTimeHelper.GetCurrentPhilippineTime()
             }, cancellationToken);
         }
