@@ -3,6 +3,7 @@ using System;
 using IBS.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IBS.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603053804_ModifiedAndRemoveTable")]
+    partial class ModifiedAndRemoveTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2073,13 +2076,11 @@ namespace IBS.DataAccess.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BankAccountName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("bank_account_name");
 
                     b.Property<string>("BankAccountNo")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("bank_account_no");
 
                     b.Property<int?>("BankId")
@@ -2087,8 +2088,7 @@ namespace IBS.DataAccess.Migrations
                         .HasColumnName("bank_id");
 
                     b.Property<string>("BatchNumber")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("batch_number");
 
                     b.Property<string>("CanceledBy")
@@ -2112,13 +2112,11 @@ namespace IBS.DataAccess.Migrations
                         .HasColumnName("check_amount");
 
                     b.Property<string>("CheckBank")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("check_bank");
 
                     b.Property<string>("CheckBranch")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("check_branch");
 
                     b.Property<DateOnly?>("CheckDate")
@@ -2126,8 +2124,7 @@ namespace IBS.DataAccess.Migrations
                         .HasColumnName("check_date");
 
                     b.Property<string>("CheckNo")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("check_no");
 
                     b.Property<DateOnly?>("ClearedDate")
@@ -2177,13 +2174,11 @@ namespace IBS.DataAccess.Migrations
                         .HasColumnName("managers_check_amount");
 
                     b.Property<string>("ManagersCheckBank")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("managers_check_bank");
 
                     b.Property<string>("ManagersCheckBranch")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("managers_check_branch");
 
                     b.Property<DateOnly?>("ManagersCheckDate")
@@ -2191,8 +2186,7 @@ namespace IBS.DataAccess.Migrations
                         .HasColumnName("managers_check_date");
 
                     b.Property<string>("ManagersCheckNo")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("managers_check_no");
 
                     b.Property<string>("PostedBy")
@@ -2205,13 +2199,12 @@ namespace IBS.DataAccess.Migrations
 
                     b.Property<string>("ReferenceNo")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("reference_no");
 
                     b.Property<string>("Remarks")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("remarks");
 
                     b.Property<string>("SeriesNumber")
