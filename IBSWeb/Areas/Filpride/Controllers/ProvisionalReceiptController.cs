@@ -160,7 +160,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     query = query.Where(pr =>
                         pr.SeriesNumber.ToLower().Contains(searchValue) ||
                         pr.ReferenceNo.ToLower().Contains(searchValue) ||
-                        pr.Remarks!.ToLower().Contains(searchValue) ||
+                        (pr.Remarks ?? string.Empty).ToLower().Contains(searchValue) ||
                         pr.Employee.FirstName.ToLower().Contains(searchValue) ||
                         pr.Employee.LastName.ToLower().Contains(searchValue) ||
                         (pr.CreatedBy ?? string.Empty).ToLower().Contains(searchValue) ||
