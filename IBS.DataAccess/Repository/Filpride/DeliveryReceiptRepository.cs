@@ -999,6 +999,7 @@ namespace IBS.DataAccess.Repository.Filpride
                 var postingDate = isDeliveredPeriodPosted
                     ? firstDayOfTheMonth
                     : deliveredDate;
+                var signedDifference = difference;
                 var particulars = $"Update Price on DR#{deliveryReceipt.DeliveryReceiptNo}. DR dated {deliveryReceipt.DeliveredDate}";
                 var isIncremental = difference > 0;
                 difference = Math.Abs(difference);
@@ -1114,6 +1115,17 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
+                    Module.DeliveryReceipt,
+                    deliveredDate,
+                    LockedPeriodAdjustmentType.SellingPrice,
+                    deliveryReceipt.DeliveryReceiptNo,
+                    GetUnitValue(deliveryReceipt.TotalAmount - signedDifference, deliveryReceipt.Quantity),
+                    GetUnitValue(deliveryReceipt.TotalAmount, deliveryReceipt.Quantity),
+                    signedDifference,
+                    "Update selling price in COS",
+                    userName,
+                    cancellationToken);
 
                 #endregion General Ledger Book Recording
 
@@ -1153,6 +1165,7 @@ namespace IBS.DataAccess.Repository.Filpride
                 var postingDate = isDeliveredPeriodPosted
                     ? firstDayOfMonth
                     : deliveredDate;
+                var signedDifference = difference;
                 var particulars = $"Update commission rate on DR#{deliveryReceipt.DeliveryReceiptNo}. DR dated {deliveryReceipt.DeliveredDate}";
                 var isIncremental = difference > 0;
                 difference = Math.Abs(difference);
@@ -1224,6 +1237,17 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
+                    Module.DeliveryReceipt,
+                    deliveredDate,
+                    LockedPeriodAdjustmentType.Commission,
+                    deliveryReceipt.DeliveryReceiptNo,
+                    GetUnitValue(deliveryReceipt.CommissionAmount - signedDifference, deliveryReceipt.Quantity),
+                    deliveryReceipt.CommissionRate,
+                    signedDifference,
+                    "Update commission",
+                    userName,
+                    cancellationToken);
                 await _db.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex)
@@ -1262,6 +1286,7 @@ namespace IBS.DataAccess.Repository.Filpride
                 var postingDate = isDeliveredPeriodPosted
                     ? firstDayOfMonth
                     : deliveredDate;
+                var signedDifference = difference;
                 var particulars = $"Update freight rate on DR#{deliveryReceipt.DeliveryReceiptNo}. DR dated {deliveryReceipt.DeliveredDate}";
                 var isIncremental = difference > 0;
                 difference = Math.Abs(difference);
@@ -1357,12 +1382,28 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
+                    Module.DeliveryReceipt,
+                    deliveredDate,
+                    LockedPeriodAdjustmentType.Freight,
+                    deliveryReceipt.DeliveryReceiptNo,
+                    GetUnitValue(deliveryReceipt.FreightAmount - signedDifference, deliveryReceipt.Quantity),
+                    deliveryReceipt.Freight,
+                    signedDifference,
+                    "Update freight",
+                    userName,
+                    cancellationToken);
                 await _db.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(ex.Message);
             }
+        }
+
+        private static decimal GetUnitValue(decimal amount, decimal quantity)
+        {
+            return quantity == 0m ? 0m : amount / quantity;
         }
     }
 }

@@ -254,6 +254,7 @@ namespace IBS.DataAccess.Repository.Filpride
                 var effectiveVolume = Math.Min(receivingReport.QuantityReceived, remainingVolume);
                 var updatedAmount = effectiveVolume * model.TriggeredPrice;
                 var difference = updatedAmount - receivingReport.Amount;
+                var oldUnitCost = GetUnitValue(receivingReport.Amount, receivingReport.QuantityReceived);
 
                 // Update receiving report
                 receivingReport.Amount = updatedAmount;
@@ -297,6 +298,18 @@ namespace IBS.DataAccess.Repository.Filpride
                 // Create GL entries for cost update
                 await unitOfWork.FilprideReceivingReport.CreateEntriesForUpdatingCost(
                     receivingReport, difference, model.ApprovedBy!, cancellationToken);
+
+                await unitOfWork.LockedPeriodAdjustment.AddIfPeriodPostedAsync(
+                    Module.ReceivingReport,
+                    receivingReport.Date,
+                    LockedPeriodAdjustmentType.UnitCost,
+                    receivingReport.ReceivingReportNo!,
+                    oldUnitCost,
+                    model.TriggeredPrice,
+                    difference,
+                    "Update approved unit cost in PO",
+                    model.ApprovedBy!,
+                    cancellationToken);
             }
 
             // Recalculate inventory once at the end
@@ -321,6 +334,11 @@ namespace IBS.DataAccess.Repository.Filpride
                     .First(x => x.IsApproved)
                     .TriggeredPrice
                 : purchaseOrder.Price;
+        }
+
+        private static decimal GetUnitValue(decimal amount, decimal quantity)
+        {
+            return quantity == 0m ? 0m : amount / quantity;
         }
     }
 }
