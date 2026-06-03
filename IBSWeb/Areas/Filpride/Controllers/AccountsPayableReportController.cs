@@ -5102,6 +5102,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                     decimal rrQtyForUnliftedLastMonth = 0m;
                                     decimal rrQtyForLiftedThisMonth = 0m;
                                     decimal currentPoQuantity = po.Quantity;
+                                    var isPoCurrentlyClosed = po.IsClosed
+                                                              && po.Date.Month <= monthYear.Month
+                                                              && po.Date.Year <= monthYear.Year;
                                     allPoTotal += currentPoQuantity;
                                     var isTaxable = po.TaxType == SD.TaxType_WithTax;
                                     var isVatable = po.VatType == SD.VatType_Vatable;
@@ -5133,7 +5136,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                                     unliftedLastMonth += currentPoQuantity - rrQtyForUnliftedLastMonth;
                                     liftedThisMonth += rrQtyForLiftedThisMonth;
-                                    unliftedThisMonth += currentPoQuantity - rrQtyForUnliftedLastMonth - rrQtyForLiftedThisMonth;
+                                    unliftedThisMonth += !isPoCurrentlyClosed
+                                        ? currentPoQuantity - rrQtyForUnliftedLastMonth - rrQtyForLiftedThisMonth
+                                        : 0m;
                                 }
 
                                 if (allPoTotal != 0m)
@@ -5529,8 +5534,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             var liftedThisMonthRrQty = 0m;
                             var unliftedThisMonth = poTotal;
                             var isPoCurrentlyClosed = po.IsClosed
-                                                      && po.Date.Month == monthYear.Month
-                                                      && po.Date.Year == monthYear.Year;
+                                                      && po.Date.Month <= monthYear.Month
+                                                      && po.Date.Year <= monthYear.Year;
 
                             if (po.ReceivingReports!.Count != 0)
                             {
