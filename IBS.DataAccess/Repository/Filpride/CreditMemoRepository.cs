@@ -269,7 +269,9 @@ namespace IBS.DataAccess.Repository.Filpride
 
                 if (serviceInvoice.HasEwt)
                 {
-                    withHoldingTaxAmount = ComputeEwtAmount(Math.Abs(netOfVatAmount), 0.01m) * -1m;
+                    withHoldingTaxAmount = ComputeEwtAmount(
+                        Math.Abs(netOfVatAmount),
+                        serviceInvoice.ServicePercent / 100m) * -1m;
                 }
 
                 if (serviceInvoice.HasWvat)
