@@ -1,7 +1,8 @@
 @{
     ViewData["Title"] = "Batch ReJournal";
-    var currentYear = DateTime.Now.Year;
-    var currentMonth = DateTime.Now.Month;
+    var now = DateTimeHelper.GetCurrentPhilippineTime();
+    var currentYear = now.Year;
+    var currentMonth = now.Month;
 }
 
 <div class="container-fluid mt-4">

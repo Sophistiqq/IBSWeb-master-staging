@@ -1076,6 +1076,16 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideGeneralLedgerBook>(x => x.Reference == serviceInvoice.ServiceInvoiceNo, cancellationToken);
 
+                if (serviceInvoice.ServiceName == "TRANSACTION FEE" &&
+                    serviceInvoice.DeliveryReceiptId != null)
+                {
+                    var dr = await _unitOfWork.FilprideDeliveryReceipt
+                                 .GetAsync(x => x.DeliveryReceiptId == serviceInvoice.DeliveryReceiptId, cancellationToken)
+                             ?? throw new NullReferenceException("DR not found!");
+
+                    await RevertTheReversalOfDrEntries(dr, serviceInvoice.Company, cancellationToken);
+                }
+
                 #region --Audit Trail Recording
 
                 FilprideAuditTrail auditTrailBook = new(GetUserFullName(), $"Unposted service invoice# {serviceInvoice.ServiceInvoiceNo}", "Service Invoice", serviceInvoice.Company);

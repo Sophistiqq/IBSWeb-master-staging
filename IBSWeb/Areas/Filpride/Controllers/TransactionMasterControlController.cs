@@ -124,14 +124,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
         {
             if (!month.HasValue || !year.HasValue)
             {
-                return BadRequest("Month and year are required.");
+                return BadRequest(new { success = false, error = "Month and year are required." });
             }
 
             var company = await GetCompanyClaimAsync();
 
             if (company == null)
             {
-                return BadRequest();
+                return BadRequest(new { success = false, error = "Company claim is missing for the current user." });
             }
 
             try
