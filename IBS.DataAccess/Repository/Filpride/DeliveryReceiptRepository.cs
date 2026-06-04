@@ -734,7 +734,6 @@ namespace IBS.DataAccess.Repository.Filpride
                 var productCostEwtAmount = ComputeEwtAmount(productCostNetOfVatAmount, 0.01m);
                 var productCostNetOfEwt = ComputeNetOfEwt(productCostGrossAmount, productCostEwtAmount);
                 var ledgers = new List<FilprideGeneralLedgerBook>();
-                var journalBooks = new List<FilprideJournalBook>();
                 var accountTitlesDto = await GetListOfAccountTitleDto(cancellationToken);
                 var (inventoryAcctNo, inventoryAcctTitle) = GetInventoryAccountTitle(productCode);
                 var inventoryTitle = accountTitlesDto.Find(c => c.AccountNumber == inventoryAcctNo) ?? throw new ArgumentException($"Account title '{inventoryAcctNo}' not found.");
@@ -826,19 +825,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
                 });
 
-                journalBooks.Add(new FilprideJournalBook
-                {
-                    Date = DateOnly.FromDateTime(startOfMonth),
-                    Reference = dr.DeliveryReceiptNo,
-                    Description = $"Auto reversal entries for the in-transit of {endOfPreviousMonth:MMM yyyy}.",
-                    AccountTitle = $"{inventoryAcctNo} {inventoryAcctTitle}",
-                    Debit = 0,
-                    Credit = productCostNetOfVatAmount,
-                    Company = dr.Company,
-                    CreatedBy = "SYSTEM GENERATED",
-                    CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
-                });
-
                 ledgers.Add(new FilprideGeneralLedgerBook
                 {
                     Date = DateOnly.FromDateTime(startOfMonth),
@@ -847,19 +833,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     AccountId = vatInputTitle.AccountId,
                     AccountNo = vatInputTitle.AccountNumber,
                     AccountTitle = vatInputTitle.AccountName,
-                    Debit = 0,
-                    Credit = productCostVatAmount,
-                    Company = dr.Company,
-                    CreatedBy = "SYSTEM GENERATED",
-                    CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
-                });
-
-                journalBooks.Add(new FilprideJournalBook
-                {
-                    Date = DateOnly.FromDateTime(startOfMonth),
-                    Reference = dr.DeliveryReceiptNo,
-                    Description = $"Auto reversal entries for the in-transit of {endOfPreviousMonth:MMM yyyy}.",
-                    AccountTitle = $"{vatInputTitle.AccountNumber} {vatInputTitle.AccountName}",
                     Debit = 0,
                     Credit = productCostVatAmount,
                     Company = dr.Company,
@@ -885,19 +858,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     SubAccountName = dr.PurchaseOrder.SupplierName
                 });
 
-                journalBooks.Add(new FilprideJournalBook
-                {
-                    Date = DateOnly.FromDateTime(startOfMonth),
-                    Reference = dr.DeliveryReceiptNo,
-                    Description = $"Auto reversal entries for the in-transit of {endOfPreviousMonth:MMM yyyy}.",
-                    AccountTitle = $"{apTradeTitle.AccountNumber} {apTradeTitle.AccountName}",
-                    Debit = productCostNetOfEwt,
-                    Credit = 0,
-                    Company = dr.Company,
-                    CreatedBy = "SYSTEM GENERATED",
-                    CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
-                });
-
                 ledgers.Add(new FilprideGeneralLedgerBook
                 {
                     Date = DateOnly.FromDateTime(startOfMonth),
@@ -913,19 +873,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
                 });
 
-                journalBooks.Add(new FilprideJournalBook
-                {
-                    Date = DateOnly.FromDateTime(startOfMonth),
-                    Reference = dr.DeliveryReceiptNo,
-                    Description = $"Auto reversal entries for the in-transit of {endOfPreviousMonth:MMM yyyy}.",
-                    AccountTitle = $"{ewtOnePercent.AccountNumber} {ewtOnePercent.AccountName}",
-                    Debit = productCostEwtAmount,
-                    Credit = 0,
-                    Company = dr.Company,
-                    CreatedBy = "SYSTEM GENERATED",
-                    CreatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
-                });
-
                 #endregion
 
                 if (!IsJournalEntriesBalanced(ledgers))
@@ -934,7 +881,6 @@ namespace IBS.DataAccess.Repository.Filpride
                 }
 
                 await _db.FilprideGeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
-                await _db.FilprideJournalBooks.AddRangeAsync(journalBooks, cancellationToken);
                 await _db.SaveChangesAsync(cancellationToken);
             }
         }

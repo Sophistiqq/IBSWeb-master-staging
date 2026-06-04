@@ -405,29 +405,6 @@ namespace IBS.DataAccess.Repository.Filpride
 
             #endregion
 
-            #region --Purchase Book Recording
-
-            FilpridePurchaseBook purchaseBook = new()
-            {
-                Date = model.Date,
-                SupplierName = model.PurchaseOrder.SupplierName,
-                SupplierTin = model.PurchaseOrder.SupplierTin,
-                SupplierAddress = model.PurchaseOrder.SupplierAddress,
-                DocumentNo = model.ReceivingReportNo!,
-                Description = model.PurchaseOrder.ProductName,
-                Amount = model.Amount,
-                VatAmount = vatAmount,
-                WhtAmount = ewtAmount,
-                NetPurchases = netOfVatAmount,
-                CreatedBy = model.CreatedBy,
-                PONo = model.PurchaseOrder.PurchaseOrderNo!,
-                DueDate = model.DueDate,
-                Company = model.Company
-            };
-
-            await _db.AddAsync(purchaseBook, cancellationToken);
-            #endregion --Purchase Book Recording
-
             await _db.SaveChangesAsync(cancellationToken);
         }
 
@@ -472,7 +449,6 @@ namespace IBS.DataAccess.Repository.Filpride
             }
 
             var unitOfWork = new UnitOfWork(_db);
-            await RemoveRecords<FilpridePurchaseBook>(pb => pb.DocumentNo == model.ReceivingReportNo, cancellationToken);
             await unitOfWork.GeneralLedger.ReverseEntries(model.ReceivingReportNo, cancellationToken);
 
             await unitOfWork.FilprideInventory.VoidInventory(existingInventory, cancellationToken);

@@ -186,17 +186,6 @@ namespace IBS.Services
                     header.CheckDate = model.CheckDate;
                     StampEdited(header, userFullName);
 
-                    await dbContext.FilprideDisbursementBooks
-                        .Where(x => x.CVNo == model.ReferenceNo && x.Company == company)
-                        .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(x => x.Particulars, finalParticulars)
-                                .SetProperty(x => x.Payee, model.Payee ?? "")
-                                .SetProperty(x => x.CheckNo, model.CheckNo ?? "")
-                                .SetProperty(x => x.CheckDate, model.CheckDate != null
-                                    ? model.CheckDate.Value.ToString(_dateFormat, CultureInfo.InvariantCulture)
-                                    : ""),
-                            cancellationToken);
-
                     await UpdateGeneralLedgerBooksAsync(model.ReferenceNo, finalParticulars, company, cancellationToken);
 
                     if (header.CvType == nameof(CVType.Invoicing))
@@ -236,12 +225,6 @@ namespace IBS.Services
                             paymentHeader.Particulars = newPaymentParticulars;
                             StampEdited(paymentHeader, userFullName);
 
-                            await dbContext.FilprideDisbursementBooks
-                                .Where(x => x.CVNo == paymentHeader.CheckVoucherHeaderNo && x.Company == company)
-                                .ExecuteUpdateAsync(setters => setters
-                                        .SetProperty(x => x.Particulars, newPaymentParticulars),
-                                    cancellationToken);
-
                             await UpdateGeneralLedgerBooksAsync(paymentHeader.CheckVoucherHeaderNo!, newPaymentParticulars, company, cancellationToken);
                         }
                     }
@@ -258,7 +241,6 @@ namespace IBS.Services
                     header.Particulars = model.Particulars;
                     StampEdited(header, userFullName);
 
-                    await UpdateJournalBooksAsync(model.ReferenceNo, model.Particulars, company, cancellationToken);
                     await UpdateGeneralLedgerBooksAsync(model.ReferenceNo, model.Particulars, company, cancellationToken);
                 }
                 else if (model.TransactionType == "SI")
@@ -273,7 +255,6 @@ namespace IBS.Services
                     header.Remarks = model.Particulars;
                     StampEdited(header, userFullName);
 
-                    await UpdateSalesBooksAsync(model.ReferenceNo, model.Particulars, company, cancellationToken);
                 }
                 else if (model.TransactionType == "SV")
                 {
@@ -287,7 +268,6 @@ namespace IBS.Services
                     header.Instructions = model.Particulars;
                     StampEdited(header, userFullName);
 
-                    await UpdateServiceBooksAsync(model.ReferenceNo, model.Particulars, company, cancellationToken);
                 }
                 else if (model.TransactionType == "CR")
                 {
@@ -301,7 +281,6 @@ namespace IBS.Services
                     header.Remarks = model.Particulars;
                     StampEdited(header, userFullName);
 
-                    await UpdateCollectionReceiptBooksAsync(model.ReferenceNo, model.Particulars, company, cancellationToken);
                 }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
@@ -330,42 +309,6 @@ namespace IBS.Services
         {
             header.EditedBy = userFullName;
             header.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
-        }
-
-        private async Task UpdateJournalBooksAsync(string referenceNo, string particulars, string company, CancellationToken cancellationToken)
-        {
-            await dbContext.FilprideJournalBooks
-                .Where(x => x.Reference == referenceNo && x.Company == company)
-                .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(x => x.Description, particulars),
-                    cancellationToken);
-        }
-
-        private async Task UpdateSalesBooksAsync(string referenceNo, string particulars, string company, CancellationToken cancellationToken)
-        {
-            await dbContext.FilprideSalesBooks
-                .Where(x => x.SerialNo == referenceNo && x.Company == company)
-                .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(x => x.Description, particulars),
-                    cancellationToken);
-        }
-
-        private async Task UpdateServiceBooksAsync(string referenceNo, string particulars, string company, CancellationToken cancellationToken)
-        {
-            await dbContext.FilprideSalesBooks
-                .Where(x => x.SerialNo == referenceNo && x.Company == company)
-                .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(x => x.Description, particulars),
-                    cancellationToken);
-        }
-
-        private async Task UpdateCollectionReceiptBooksAsync(string referenceNo, string particulars, string company, CancellationToken cancellationToken)
-        {
-            await dbContext.FilprideCashReceiptBooks
-                .Where(x => x.RefNo == referenceNo && x.Company == company)
-                .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(x => x.Particulars, particulars),
-                    cancellationToken);
         }
 
         private async Task UpdateGeneralLedgerBooksAsync(string referenceNo, string particulars, string company, CancellationToken cancellationToken)

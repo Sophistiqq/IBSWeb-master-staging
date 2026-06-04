@@ -1756,37 +1756,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 await _unitOfWork.FilprideCheckVoucher.PostAsync(modelHeader, modelDetails, cancellationToken);
 
-                #region --Disbursement Book Recording(CV)--
-
-                var disbursement = new List<FilprideDisbursementBook>();
-                foreach (var details in modelDetails)
-                {
-                    var bank = await _unitOfWork.FilprideBankAccount.GetAsync(model => model.BankAccountId == modelHeader.BankId, cancellationToken);
-                    disbursement.Add(
-                            new FilprideDisbursementBook
-                            {
-                                Date = modelHeader.Date,
-                                CVNo = modelHeader.CheckVoucherHeaderNo!,
-                                Payee = modelHeader.Payee != null ? modelHeader.Payee! : modelHeader.SupplierName!,
-                                Amount = modelHeader.Total,
-                                Particulars = modelHeader.Particulars!,
-                                Bank = bank != null ? bank.Branch : "N/A",
-                                CheckNo = !string.IsNullOrEmpty(modelHeader.CheckNo) ? modelHeader.CheckNo : "N/A",
-                                CheckDate = modelHeader.CheckDate?.ToString("MM/dd/yyyy") ?? "N/A",
-                                ChartOfAccount = details.AccountNo + " " + details.AccountName,
-                                Debit = details.Debit,
-                                Credit = details.Credit,
-                                Company = modelHeader.Company,
-                                CreatedBy = modelHeader.CreatedBy,
-                                CreatedDate = modelHeader.CreatedDate
-                            }
-                        );
-                }
-
-                await _dbContext.FilprideDisbursementBooks.AddRangeAsync(disbursement, cancellationToken);
-
-                #endregion --Disbursement Book Recording(CV)--
-
                 #region --Audit Trail Recording
 
                 FilprideAuditTrail auditTrailBook = new(modelHeader.PostedBy!, $"Posted check voucher# {modelHeader.CheckVoucherHeaderNo}", "Check Voucher", modelHeader.Company);
@@ -1909,7 +1878,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 model.VoidedDate = DateTimeHelper.GetCurrentPhilippineTime();
                 model.Status = nameof(Status.Voided);
 
-                await _unitOfWork.FilprideCheckVoucher.RemoveRecords<FilprideDisbursementBook>(db => db.CVNo == model.CheckVoucherHeaderNo, cancellationToken);
                 await _unitOfWork.GeneralLedger.ReverseEntries(model.CheckVoucherHeaderNo, cancellationToken);
 
                 #region -- Recalculate payment of RR's or DR's
@@ -2006,7 +1974,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 cvHeader.Status = nameof(CheckVoucherPaymentStatus.ForPosting);
 
                 await _unitOfWork.FilprideCheckVoucher.RemoveRecords<FilprideGeneralLedgerBook>(gl => gl.Reference == cvHeader.CheckVoucherHeaderNo, cancellationToken);
-                await _unitOfWork.FilprideCheckVoucher.RemoveRecords<FilprideDisbursementBook>(d => d.CVNo == cvHeader.CheckVoucherHeaderNo, cancellationToken);
 
                 #region -- Revert the tagging of RR's or DR's
 
@@ -4588,9 +4555,22 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             try
             {
+                if (!month.HasValue || !year.HasValue)
+                {
+                    return BadRequest("Month and year are required.");
+                }
+
+                var companyClaims = await GetCompanyClaimAsync();
+
+                if (companyClaims == null)
+                {
+                    return BadRequest();
+                }
+
                 var cvs = await _dbContext.FilprideCheckVoucherHeaders
                     .Include(x => x.Details)
                     .Where(x =>
+                        x.Company == companyClaims &&
                         x.PostedBy != null &&
                         x.Date.Month == month &&
                         x.Date.Year == year)
@@ -4599,6 +4579,21 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 if (!cvs.Any())
                 {
                     return Json(new { sucess = true, message = "No records were returned." });
+                }
+
+                var cvReferences = cvs
+                    .Select(x => x.CheckVoucherHeaderNo!)
+                    .Distinct()
+                    .ToList();
+
+                var existingGlEntries = await _dbContext.FilprideGeneralLedgerBooks
+                    .Where(x => x.Company == companyClaims && cvReferences.Contains(x.Reference))
+                    .ToListAsync(cancellationToken);
+
+                if (existingGlEntries.Count != 0)
+                {
+                    _dbContext.FilprideGeneralLedgerBooks.RemoveRange(existingGlEntries);
+                    await _dbContext.SaveChangesAsync(cancellationToken);
                 }
 
                 foreach (var cv in cvs
