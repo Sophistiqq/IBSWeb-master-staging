@@ -269,6 +269,8 @@ namespace IBS.DataAccess.Repository.Filpride
             #endregion Update the invoice if any
 
             await PostAsync(model, cancellationToken);
+            var unitOfWork = new UnitOfWork(_db);
+            await unitOfWork.FilprideInventory.AddPurchaseToInventoryAsync(model, cancellationToken);
 
             await UpdatePoAsync(model.PurchaseOrder!.PurchaseOrderId,
                 model.QuantityReceived, cancellationToken);
@@ -396,14 +398,6 @@ namespace IBS.DataAccess.Repository.Filpride
             await _db.AddRangeAsync(ledgers, cancellationToken);
 
             #endregion --General Ledger Recording
-
-            #region--Inventory Recording
-
-            var unitOfWork = new UnitOfWork(_db);
-
-            await unitOfWork.FilprideInventory.AddPurchaseToInventoryAsync(model, cancellationToken);
-
-            #endregion
 
             await _db.SaveChangesAsync(cancellationToken);
         }

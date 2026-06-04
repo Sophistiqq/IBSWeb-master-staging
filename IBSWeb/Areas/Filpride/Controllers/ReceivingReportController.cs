@@ -579,6 +579,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 #endregion --Audit Trail Recording
 
                 await _unitOfWork.FilprideReceivingReport.PostAsync(model, cancellationToken);
+                await _unitOfWork.FilprideInventory.AddPurchaseToInventoryAsync(model, cancellationToken);
 
                 await _unitOfWork.FilprideReceivingReport.UpdatePoAsync(model.PurchaseOrder!.PurchaseOrderId,
                     model.QuantityReceived, cancellationToken);
