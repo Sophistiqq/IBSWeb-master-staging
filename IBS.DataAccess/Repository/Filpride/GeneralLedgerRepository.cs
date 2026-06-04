@@ -21,7 +21,10 @@ namespace IBS.DataAccess.Repository.Filpride
                 .Where(gl => gl.Reference == reference)
                 .ToListAsync(cancellationToken);
 
-            if (existingGlEntries.Count == 0) return;
+            if (existingGlEntries.Count == 0)
+            {
+                return;
+            }
 
             var reversingDate = DateTimeHelper.GetCurrentPhilippineTime();
 
