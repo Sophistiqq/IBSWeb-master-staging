@@ -368,7 +368,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 decimal reverseEwtTenPercentAmount = 0;
 
                 List<AccountTitleDto> accountTitlesDto = await _unitOfWork.FilprideCheckVoucher.GetListOfAccountTitleDto(cancellationToken);
-                AccountTitleDto apNonTradeTitle = accountTitlesDto.Find(c => c.AccountNumber == "202010200") ?? throw new ArgumentException("Account title '202010200' not found.");
+                AccountTitleDto apNonTradeTitle = accountTitlesDto.Find(c => c.AccountNumber == "201020200") ?? throw new ArgumentException("Account title '201020200' not found.");
                 AccountTitleDto vatInputTitle = accountTitlesDto.Find(c => c.AccountNumber == "101060200") ?? throw new ArgumentException("Account title '101060200' not found.");
                 AccountTitleDto ewtOnePercent = accountTitlesDto.Find(c => c.AccountNumber == "201030210") ?? throw new ArgumentException("Account title '201030210' not found.");
                 AccountTitleDto ewtTwoPercent = accountTitlesDto.Find(c => c.AccountNumber == "201030220") ?? throw new ArgumentException("Account title '201030220' not found.");
@@ -937,7 +937,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 decimal reverseEwtTenPercentAmount = 0;
 
                 List<AccountTitleDto> accountTitlesDto = await _unitOfWork.FilprideCheckVoucher.GetListOfAccountTitleDto(cancellationToken);
-                AccountTitleDto apNonTradeTitle = accountTitlesDto.Find(c => c.AccountNumber == "202010200") ?? throw new ArgumentException("Account title '202010200' not found.");
+                AccountTitleDto apNonTradeTitle = accountTitlesDto.Find(c => c.AccountNumber == "201020200") ?? throw new ArgumentException("Account title '201020200' not found.");
                 AccountTitleDto vatInputTitle = accountTitlesDto.Find(c => c.AccountNumber == "101060200") ?? throw new ArgumentException("Account title '101060200' not found.");
                 AccountTitleDto ewtOnePercent = accountTitlesDto.Find(c => c.AccountNumber == "201030210") ?? throw new ArgumentException("Account title '201030210' not found.");
                 AccountTitleDto ewtTwoPercent = accountTitlesDto.Find(c => c.AccountNumber == "201030220") ?? throw new ArgumentException("Account title '201030220' not found.");

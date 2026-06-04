@@ -99,10 +99,10 @@
                                         </td>
                                         <td>
                                             <input name="PayrollAccountingEntries[@i].MultipleSupplierCodeName"
-                                                   value="@Model.PayrollAccountingEntries[i].MultipleSupplierCodeName" 
+                                                   value="@Model.PayrollAccountingEntries[i].MultipleSupplierCodeName"
                                                    style="border:none" class="w-100" readonly />
-                                            <input name="PayrollAccountingEntries[@i].MultipleSupplierId" 
-                                                   type="hidden" 
+                                            <input name="PayrollAccountingEntries[@i].MultipleSupplierId"
+                                                   type="hidden"
                                                    value="@Model.PayrollAccountingEntries[i].MultipleSupplierId"/>
                                         </td>
                                         <td>
@@ -167,7 +167,7 @@
                     </div>
                     <div class="row">
                         <div class="col-12" id="categoryContainer">
-                            
+
                         </div>
                     </div>
                 </form>
@@ -193,7 +193,7 @@
                 width: 'resolve',
                 theme: 'classic'
             });
-            
+
             // Initialize totals on page load
             updateTotalDebitAndCredit();
         })
@@ -213,8 +213,8 @@
                                 <select id="Category" name="Category" class="form-select" style="width: 100%"></select>
                                 <span class="text-danger"></span>
                             </div>`;
-            
-            if (accountNumber === "201030550" || accountNumber === "201030510" || accountNumber === "201030600" || accountNumber === "202010200" || accountNumber === "101020500" || accountNumber === "201030700"){
+
+            if (accountNumber === "201030550" || accountNumber === "201030510" || accountNumber === "201030600" || accountNumber === "201020200" || accountNumber === "101020500" || accountNumber === "201030700"){
                 if (selectionGroup.length === 0) {
                     showSupplierSelectList();
                 }
@@ -229,7 +229,7 @@
         function showSupplierSelectList (event){
             let selectionGroup = $("#selectionGroup");
             let multipleSupplierSelect = $("#MultipleSupplierId");
-            
+
             $.ajax({
                 url: '@Url.Action("GetNonTradeSupplierSelectList", "CheckVoucherNonTradePayrollInvoice")',
                 type: "GET",
@@ -264,7 +264,7 @@
                 }
             });
         }
-        
+
         function saveAccountingEntry(event) {
             // Get the values from the modal inputs
             var accountNumber = $("#AccountNo").val();
@@ -285,7 +285,7 @@
                 alert('Please select Account No.!');
                 return;
             }
-            
+
             if ($("#MultipleSupplierId").length !== undefined){
                 if ($("#MultipleSupplierId option:selected").val() === "") {
                     event.preventDefault();
@@ -373,7 +373,7 @@
             if ($("#categoryGroup").length !== 0) {
                 $("#categoryGroup").remove();
             }
-            
+
             validateDebitAndCredit();
         }
 
@@ -381,18 +381,18 @@
         function removeRow(button) {
             // Remove the row
             $(button).closest("tr").remove();
-            
+
             // Reindex all remaining rows
             reindexRows();
-            
+
             updateTotalDebitAndCredit();
         }
-        
+
         // Function to reindex all rows after deletion
         function reindexRows() {
             $("#accountingEntriesBody tr").each(function(index) {
                 $(this).attr('data-index', index);
-                
+
                 // Update all input names with the new index
                 $(this).find('input[name^="PayrollAccountingEntries"]').each(function() {
                     var name = $(this).attr('name');
@@ -401,7 +401,7 @@
                 });
             });
         }
-    
+
     </script>
     <script>
         function validateDebitAndCredit() {
@@ -422,7 +422,7 @@
 
                 const title = titleInput.value.trim();
                 const credit = parseFloat(creditInput.value.replace(/,/g, "")) || 0;
-                
+
                 if (title === requiredTitle && credit > 0) {
                     hasValidSubaccount = true;
                 }
@@ -477,7 +477,7 @@
             $(this).val(formatNumber(value));
             updateTotalDebitAndCredit();
         });
-    
+
         // Recalculate on any input change
         $(document).on("input", ".editable-amount", function() {
             updateTotalDebitAndCredit();

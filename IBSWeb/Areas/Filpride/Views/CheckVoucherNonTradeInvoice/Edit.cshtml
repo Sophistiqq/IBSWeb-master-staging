@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Check Voucher Non-Trade Invoice - Edit";
     var chartOfAccountItems = Model.ChartOfAccounts!
-        .Where(account => !account.Value.StartsWith("202010200"))
+        .Where(account => !account.Value.StartsWith("201020200"))
         .ToList();
 }
 
@@ -184,7 +184,7 @@
         // Constants for calculations
         const VAT_RATE = 0.12;
         const VAT_INCLUDED_PRICE_MULTIPLIER = 1.12;
-        const AP_NON_TRADE = "202010200 AP-Non Trade Payable";
+        const AP_NON_TRADE = "201020200 AP-Non Trade Payable";
         const INPUT_VAT = "101060200 Vat - Input";
         const PAYABLE_ACCOUNTS = {
             0.01: "201030210 Expanded Withholding Tax 1%",

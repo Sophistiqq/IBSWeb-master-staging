@@ -85,7 +85,7 @@ namespace IBS.DataAccess.Repository.Filpride
 
             var detailsVoucher = await _db.FilprideCheckVoucherDetails
                 .Where(cvd => cvd.TransactionNo == invoiceVoucher.CheckVoucherHeaderNo
-                              && cvd.AccountNo == "202010200")
+                              && cvd.AccountNo == "201020200")
                 .Select(cvd => cvd.Credit)
                 .FirstOrDefaultAsync(cancellationToken);
 

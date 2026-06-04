@@ -35,7 +35,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
         private readonly ILogger<CheckVoucherTradeController> _logger;
         private readonly ISubAccountResolver _subAccountResolver;
         private const string _apTradePayableAccountNo = "202010100";
-        private const string _apNonTradePayableAccountNo = "202010200";
+        private const string _apNonTradePayableAccountNo = "201020200";
         private const string _commissionPayableAccountNo = "201010200";
         private const string _haulingPayableAccountNo = "201010300";
         private const string _cashInBankAccountNo = "101010100";
