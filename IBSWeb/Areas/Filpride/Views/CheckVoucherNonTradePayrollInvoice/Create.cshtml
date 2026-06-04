@@ -429,7 +429,7 @@
             var isValid = true;
             let hasValidSubaccount = false;
             const rows = document.querySelectorAll("#accountingEntriesBody tr");
-            const requiredTitle = "AP-Non Trade Payable";
+            const requiredTitle = "AP - Accounts Payables - Non - Trade";
 
             for (const row of rows) {
                 const titleInput = row.querySelector("input[name*='AccountTitle']");
@@ -459,7 +459,7 @@
                 errorMessage = "Total Amount should be equal to Total Debit and Credit.";
                 isValid = false;
             } else if (!hasValidSubaccount) {
-                errorMessage = "Must include AP-Non Trade Payable with credit.";
+                errorMessage = "Must include AP - Accounts Payables - Non - Trade with credit.";
                 isValid = false;
             }
 
