@@ -800,7 +800,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             await _dbContext.FilprideGeneralLedgerBooks
                 .Where(x => (x.Reference == dr.DeliveryReceiptNo || (relatedRrNo != null && x.Reference == relatedRrNo))
-                            && x.Company == company && x.Description.StartsWith("Reversal"))
+                            && x.Company == company && x.Description.Contains("Reversal of entries due to recording of transaction fee"))
                 .ExecuteDeleteAsync(cancellationToken);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -1074,7 +1074,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 serviceInvoice.PostedDate = null;
                 serviceInvoice.Status = nameof(Status.Pending);
 
-                await _unitOfWork.FilprideSalesInvoice.RemoveRecords<FilprideGeneralLedgerBook>(x => x.Reference == serviceInvoice.ServiceInvoiceNo, cancellationToken);
+                await _unitOfWork.FilprideServiceInvoice.RemoveRecords<FilprideGeneralLedgerBook>(x => x.Reference == serviceInvoice.ServiceInvoiceNo, cancellationToken);
 
                 if (serviceInvoice.ServiceName == "TRANSACTION FEE" &&
                     serviceInvoice.DeliveryReceiptId != null)

@@ -841,7 +841,7 @@ namespace IBS.Services
 
             await dbContext.FilprideGeneralLedgerBooks
                 .Where(x => (x.Reference == dr.DeliveryReceiptNo || (relatedRrNo != null && x.Reference == relatedRrNo))
-                            && x.Company == company && x.Description.StartsWith("Reversal"))
+                            && x.Company == company && x.Description.Contains("Reversal of entries due to recording of transaction fee."))
                 .ExecuteDeleteAsync(cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
