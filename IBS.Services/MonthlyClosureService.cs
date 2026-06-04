@@ -59,7 +59,7 @@ namespace IBS.Services
                                                         $"Closing for this month cannot proceed.");
                 }
 
-                await AutoReversalForCvWithoutDcrDate(monthDate, company, cancellationToken);
+                //await AutoReversalForCvWithoutDcrDate(monthDate, company, cancellationToken);
                 await ComputeNibit(monthDate, company, cancellationToken);
                 await RecordGlPeriodBalance(monthDate, company, cancellationToken);
 
