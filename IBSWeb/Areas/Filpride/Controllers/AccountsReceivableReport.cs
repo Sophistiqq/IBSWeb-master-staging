@@ -4023,7 +4023,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         var vatAmount = isVatable
                                             ? RoundToFour(repoCalculator.ComputeVatAmount(netOfVat))
                                             : 0m;
-                                        var vatPerLiter = vatAmount / record.Quantity;
+                                        var vatPerLiter = DivideOrZero(vatAmount, record.Quantity);
                                         var ewtAmount = isTaxable
                                             ? RoundToFour(repoCalculator.ComputeEwtAmount(netOfVat, 0.01m))
                                             : 0m;
@@ -4059,7 +4059,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                         totalQuantity += record.Quantity;
                                         totalFreight += freight ?? 0m;
                                         totalFreightPerLiter += record.DeliveryReceipt?.Freight ?? 0m;
-                                        totalVatPerLiter += vatPerLiter;
                                         totalVatAmount += vatAmount;
                                         totalGrossAmount += grossAmount;
                                         totalAmountPaid += record.AmountPaid;
@@ -4110,6 +4109,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                 }
 
                                 totalFreightPerLiter = totalFreight != 0 && totalQuantity != 0 ? DivideOrZero(totalFreight, totalQuantity) : 0m;
+                                totalVatPerLiter = DivideOrZero(totalVatAmount, totalQuantity);
                             #endregion
 
                             #region -- Create Table Cell for Totals
@@ -4370,7 +4370,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         totalQuantity += si.Quantity;
                         totalFreight += freight ?? 0m;
                         totalFreightPerLiter += si.DeliveryReceipt?.Freight ?? 0m;
-                        totalVatPerLiter += vatPerLiter;
                         totalVatAmount += vatAmount;
                         totalGrossAmount += grossAmount;
                         totalAmountPaid += si.AmountPaid;
@@ -4443,6 +4442,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     row++;
                 }
                 totalFreightPerLiter = totalFreight != 0 && totalQuantity != 0 ? DivideOrZero(totalFreight, totalQuantity) : 0m;
+                totalVatPerLiter = DivideOrZero(totalVatAmount, totalQuantity);
 
                 worksheet.Cells[row, 12].Value = "GRAND TOTAL ";
 
