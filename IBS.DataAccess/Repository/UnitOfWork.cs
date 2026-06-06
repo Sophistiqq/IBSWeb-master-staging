@@ -86,7 +86,6 @@ namespace IBS.DataAccess.Repository
         public IAuthorityToLoadRepository FilprideAuthorityToLoad { get; private set; }
         public Filpride.IRepository.IChartOfAccountRepository FilprideChartOfAccount { get; private set; }
         public IAuditTrailRepository FilprideAuditTrail { get; private set; }
-        public Filpride.IRepository.IEmployeeRepository FilprideEmployee { get; private set; }
         public ICustomerBranchRepository FilprideCustomerBranch { get; private set; }
         public ITermsRepository FilprideTerms { get; private set; }
         public Filpride.IRepository.IGeneralLedgerRepository GeneralLedger { get; private set; }
@@ -161,7 +160,6 @@ namespace IBS.DataAccess.Repository
             FilprideAuthorityToLoad = new AuthorityToLoadRepository(_db);
             FilprideChartOfAccount = new Filpride.ChartOfAccountRepository(_db);
             FilprideAuditTrail = new AuditTrailRepository(_db);
-            FilprideEmployee = new Filpride.EmployeeRepository(_db);
             FilprideCustomerBranch = new CustomerBranchRepository(_db);
             FilprideTerms = new TermsRepository(_db);
             GeneralLedger = new Filpride.GeneralLedgerRepository(_db);
@@ -344,20 +342,6 @@ namespace IBS.DataAccess.Repository
                 {
                     Value = ba.BankAccountId.ToString(),
                     Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
-                })
-                .ToListAsync(cancellationToken);
-        }
-
-        public async Task<List<SelectListItem>> GetFilprideEmployeeListById(CancellationToken cancellationToken = default)
-        {
-            return await _db.FilprideEmployees
-                .Where(e => e.IsActive)
-                .OrderBy(e => e.FirstName)
-                .ThenBy(e => e.LastName)
-                .Select(e => new SelectListItem
-                {
-                    Value = e.EmployeeId.ToString(),
-                    Text = $"{e.EmployeeNumber} - {e.FirstName} {e.LastName}"
                 })
                 .ToListAsync(cancellationToken);
         }

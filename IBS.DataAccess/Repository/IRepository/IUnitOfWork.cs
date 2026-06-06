@@ -36,7 +36,6 @@ namespace IBS.DataAccess.Repository.IRepository
         Filpride.IRepository.ISupplierRepository FilprideSupplier { get; }
         Filpride.IRepository.ICustomerRepository FilprideCustomer { get; }
         IAuditTrailRepository FilprideAuditTrail { get; }
-        Filpride.IRepository.IEmployeeRepository FilprideEmployee { get; }
         ICustomerBranchRepository FilprideCustomerBranch { get; }
         ITermsRepository FilprideTerms { get; }
         Filpride.IRepository.IGeneralLedgerRepository GeneralLedger { get; }
@@ -59,8 +58,6 @@ namespace IBS.DataAccess.Repository.IRepository
         Task<List<SelectListItem>> GetFilprideHaulerListAsyncById(string company, CancellationToken cancellationToken = default);
 
         Task<List<SelectListItem>> GetFilprideBankAccountListById(string company, CancellationToken cancellationToken = default);
-
-        Task<List<SelectListItem>> GetFilprideEmployeeListById(CancellationToken cancellationToken = default);
 
         Task<List<SelectListItem>> GetDistinctFilpridePickupPointListById(string company, CancellationToken cancellationToken = default);
 
