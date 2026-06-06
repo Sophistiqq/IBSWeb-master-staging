@@ -76,6 +76,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
             return $"{fileName}-{DateTimeHelper.GetCurrentPhilippineTime():yyyyMMddHHmmss}{extension}";
         }
 
+        private static bool IsEmployeeAdvance(FilprideCheckVoucherHeader header)
+        {
+            return header.IsAdvances && header.IsEmployeeAdvance;
+        }
+
         public IActionResult Index()
         {
             return View();
@@ -133,6 +138,23 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 var pagedData = await checkVoucherHeaders
                     .Skip(parameters.Start)
                     .Take(parameters.Length)
+                    .Select(x => new
+                    {
+                        x.CheckVoucherHeaderId,
+                        x.CheckVoucherHeaderNo,
+                        x.Date,
+                        x.Payee,
+                        x.Reference,
+                        x.CheckNo,
+                        x.Total,
+                        x.Status,
+                        x.VoidedBy,
+                        x.CanceledBy,
+                        x.PostedBy,
+                        x.IsAdvances,
+                        x.SupplierId,
+                        x.IsEmployeeAdvance
+                    })
                     .ToListAsync(cancellationToken);
 
                 return Json(new
@@ -259,9 +281,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 modelHeader.PostedBy = GetUserFullName();
                 modelHeader.PostedDate = DateTimeHelper.GetCurrentPhilippineTime();
-                modelHeader.Status = modelHeader.EmployeeId == null
-                    ? nameof(CheckVoucherPaymentStatus.Posted)
-                    : nameof(CheckVoucherPaymentStatus.Unliquidated);
+                modelHeader.Status = IsEmployeeAdvance(modelHeader)
+                    ? nameof(CheckVoucherPaymentStatus.Unliquidated)
+                    : nameof(CheckVoucherPaymentStatus.Posted);
 
                 await _unitOfWork.FilprideCheckVoucher.PostAsync(modelHeader, modelDetails, cancellationToken);
 
@@ -1703,7 +1725,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 return BadRequest();
             }
 
-            viewModel.Employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+            viewModel.Suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
 
             viewModel.Banks = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
 
@@ -1727,7 +1749,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["warning"] = "The information provided was invalid.";
-                viewModel.Employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+                viewModel.Suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
                 viewModel.Banks = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
                 viewModel.MinDate = await _unitOfWork.GetMinimumPeriodBasedOnThePostedPeriods(Module.CheckVoucher, cancellationToken);
                 return View(viewModel);
@@ -1753,6 +1775,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 #endregion
 
+                var supplier = await _unitOfWork.FilprideSupplier
+                    .GetAsync(s => s.SupplierId == viewModel.SupplierId && s.Company == companyClaims && s.Category == "Employee",
+                        cancellationToken);
+
+                if (supplier == null)
+                {
+                    return NotFound();
+                }
+
                 FilprideCheckVoucherHeader checkVoucherHeader = new()
                 {
                     CheckVoucherHeaderNo = await _unitOfWork.FilprideCheckVoucher.GenerateCodeMultiplePaymentAsync(companyClaims, viewModel.DocumentType!, cancellationToken),
@@ -1766,7 +1797,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     CvType = nameof(CVType.Payment),
                     BankId = viewModel.BankId,
                     Payee = viewModel.Payee,
-                    SupplierName = viewModel.Payee,
+                    SupplierId = viewModel.SupplierId,
+                    SupplierName = supplier.SupplierName,
                     Address = viewModel.PayeeAddress,
                     Tin = viewModel.PayeeTin,
                     CheckNo = viewModel.CheckNo,
@@ -1775,7 +1807,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Company = companyClaims,
                     Type = viewModel.DocumentType,
                     IsAdvances = true,
-                    EmployeeId = viewModel.EmployeeId,
+                    IsEmployeeAdvance = true,
                     BankAccountName = bank.AccountName,
                     BankAccountNumber = bank.AccountNo,
                     TaxType = string.Empty,
@@ -1802,8 +1834,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         CheckVoucherHeaderId = checkVoucherHeader.CheckVoucherHeaderId,
                         Debit = viewModel.Total,
                         Credit = 0,
-                        SubAccountType = SubAccountType.Employee,
-                        SubAccountId = viewModel.EmployeeId,
+                        SubAccountType = SubAccountType.Supplier,
+                        SubAccountId = viewModel.SupplierId,
                         SubAccountName = viewModel.Payee
                     },
 
@@ -1855,7 +1887,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 TempData["error"] = ex.Message;
                 await transaction.RollbackAsync(cancellationToken);
 
-                viewModel.Employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+                viewModel.Suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
 
                 viewModel.Banks = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
 
@@ -1897,7 +1929,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     return BadRequest();
                 }
 
-                var employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+                var suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
 
                 var bankAccounts = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
 
@@ -1905,8 +1937,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 {
                     CvId = existingHeaderModel.CheckVoucherHeaderId,
                     TransactionDate = existingHeaderModel.Date,
-                    EmployeeId = existingHeaderModel.EmployeeId ?? 0,
-                    Employees = employees,
+                    SupplierId = existingHeaderModel.SupplierId ?? 0,
+                    Suppliers = suppliers,
                     Payee = existingHeaderModel.Payee!,
                     PayeeAddress = existingHeaderModel.Address,
                     PayeeTin = existingHeaderModel.Tin,
@@ -1944,7 +1976,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             if (!ModelState.IsValid)
             {
-                viewModel.Employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+                viewModel.Suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
                 viewModel.Banks = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
                 viewModel.MinDate = await _unitOfWork.GetMinimumPeriodBasedOnThePostedPeriods(Module.CheckVoucher, cancellationToken);
                 TempData["warning"] = "The information provided was invalid.";
@@ -1959,6 +1991,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     .GetAsync(cv => cv.CheckVoucherHeaderId == viewModel.CvId, cancellationToken);
 
                 if (existingHeaderModel == null)
+                {
+                    return NotFound();
+                }
+
+                var supplier = await _unitOfWork.FilprideSupplier
+                    .GetAsync(s => s.SupplierId == viewModel.SupplierId && s.Company == companyClaims && s.Category == "Employee",
+                        cancellationToken);
+
+                if (supplier == null)
                 {
                     return NotFound();
                 }
@@ -1992,6 +2033,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 existingHeaderModel.CheckNo = viewModel.CheckNo;
                 existingHeaderModel.CheckDate = viewModel.CheckDate;
                 existingHeaderModel.CheckAmount = viewModel.Total;
+                existingHeaderModel.SupplierId = viewModel.SupplierId;
+                existingHeaderModel.IsEmployeeAdvance = true;
+                existingHeaderModel.SupplierName = supplier.SupplierName;
                 existingHeaderModel.BankAccountName = bank.AccountName;
                 existingHeaderModel.BankAccountNumber = bank.AccountNo;
 
@@ -2022,8 +2066,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         CheckVoucherHeaderId = existingHeaderModel.CheckVoucherHeaderId,
                         Debit = viewModel.Total,
                         Credit = 0,
-                        SubAccountType = SubAccountType.Employee,
-                        SubAccountId = viewModel.EmployeeId,
+                        SubAccountType = SubAccountType.Supplier,
+                        SubAccountId = viewModel.SupplierId,
                         SubAccountName = viewModel.Payee
                     },
 
@@ -2063,7 +2107,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 _logger.LogError(ex, "Failed to edit advances to employee. Error: {ErrorMessage}, Stack: {StackTrace}. Edited by: {UserName}",
                     ex.Message, ex.StackTrace, _userManager.GetUserName(User));
 
-                viewModel.Employees = await _unitOfWork.GetFilprideEmployeeListById(cancellationToken);
+                viewModel.Suppliers = await _unitOfWork.GetFilprideEmployeeSupplierListAsyncById(companyClaims, cancellationToken);
 
                 viewModel.Banks = await _unitOfWork.GetFilprideBankAccountListById(companyClaims, cancellationToken);
 
@@ -2073,27 +2117,28 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
         }
 
-        public async Task<IActionResult> GetEmployeeDetails(int? employeeId)
+        public async Task<IActionResult> GetEmployeeDetails(int? supplierId, CancellationToken cancellationToken = default)
         {
             var companyClaims = await GetCompanyClaimAsync();
-            if (employeeId == null)
+            if (companyClaims == null || supplierId == null)
             {
                 return Json(null);
             }
 
-            var employee = await _unitOfWork.FilprideEmployee
-                .GetAsync(e => e.EmployeeId == employeeId);
+            var supplier = await _unitOfWork.FilprideSupplier
+                .GetAsync(s => s.SupplierId == supplierId && s.Company == companyClaims && s.Category == "Employee",
+                    cancellationToken);
 
-            if (employee == null)
+            if (supplier == null)
             {
                 return Json(null);
             }
 
             return Json(new
             {
-                Name = $"{employee.FirstName} {employee.LastName}",
-                employee.Address,
-                employee.TinNo,
+                Name = supplier.SupplierName,
+                Address = supplier.SupplierAddress,
+                TinNo = supplier.SupplierTin,
             });
         }
 
@@ -2191,6 +2236,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Company = companyClaims,
                     Type = viewModel.DocumentType,
                     IsAdvances = true,
+                    IsEmployeeAdvance = false,
                     SupplierId = viewModel.SupplierId,
                     SupplierName = supplier.SupplierName,
                     BankAccountName = bank.AccountName,

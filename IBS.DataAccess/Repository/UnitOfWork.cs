@@ -262,6 +262,23 @@ namespace IBS.DataAccess.Repository
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<SelectListItem>> GetFilprideEmployeeSupplierListAsyncById(string company, CancellationToken cancellationToken = default)
+        {
+            return await _db.FilprideSuppliers
+                .Where(s => s.IsActive && s.Category == "Employee")
+                .Where(GetCompanyFilter<FilprideSupplier>(company))
+                .OrderBy(s => s.EmployeeNumber)
+                .ThenBy(s => s.SupplierName)
+                .Select(s => new SelectListItem
+                {
+                    Value = s.SupplierId.ToString(),
+                    Text = string.IsNullOrWhiteSpace(s.EmployeeNumber)
+                        ? s.SupplierName
+                        : $"{s.EmployeeNumber} - {s.SupplierName}"
+                })
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<List<SelectListItem>> GetFilprideTradeSupplierListAsyncById(string company, CancellationToken cancellationToken = default)
         {
             return await _db.FilprideSuppliers
