@@ -3,6 +3,7 @@ using System;
 using IBS.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IBS.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606063706_RemoveFilprideEmployeeTable")]
+    partial class RemoveFilprideEmployeeTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4137,10 +4140,6 @@ namespace IBS.DataAccess.Migrations
                     b.Property<decimal>("AdjustmentValue")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("adjustment_value");
-
-                    b.Property<decimal>("AffectedQuantity")
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("affected_quantity");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
