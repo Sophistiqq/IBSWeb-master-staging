@@ -2265,7 +2265,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     var quantity = dr.DeliveryReceipt.Quantity;
 
                     var customerType = dr.DeliveryReceipt.CustomerOrderSlip!.CustomerType;
-                    var productName = dr.DeliveryReceipt.CustomerOrderSlip1.ProductName;
+                    var productName = dr.DeliveryReceipt.CustomerOrderSlip!.ProductName;
 
                     switch (customerType)
                     {
