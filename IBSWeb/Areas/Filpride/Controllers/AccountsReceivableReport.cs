@@ -2264,13 +2264,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     var freightNetOfVat = isHaulerVatable ? RoundToFour(repoCalculator.ComputeNetOfVat(freightAmount)) : freightAmount;
                     var quantity = dr.DeliveryReceipt.Quantity;
 
-                    var customerType = dr.DeliveryReceipt.CustomerOrderSlip?.CustomerType;
-                    var productName = dr.DeliveryReceipt.CustomerOrderSlip?.ProductName;
-
-                    if (string.IsNullOrWhiteSpace(customerType) || string.IsNullOrWhiteSpace(productName))
-                    {
-                        throw new InvalidOperationException("Missing customer type or product name in sales report row.");
-                    }
+                    var customerType = dr.DeliveryReceipt.CustomerOrderSlip!.CustomerType;
+                    var productName = dr.DeliveryReceipt.CustomerOrderSlip1.ProductName;
 
                     switch (customerType)
                     {

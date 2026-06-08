@@ -3376,7 +3376,10 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                     #region -- Variables and Formulas for summary --
 
-                    switch (dr.Customer!.CustomerType)
+                    var customerType = dr.CustomerOrderSlip!.CustomerType;
+                    var productName = dr.CustomerOrderSlip!.ProductName;
+
+                    switch (customerType)
                     {
                         case nameof(CustomerType.Retail):
                             retailOverallQuantitySum += volume;
@@ -3387,7 +3390,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             retailOverallCommissionSum += commissionAmount;
                             retailOverallNetMarginSum += netMarginAmount;
 
-                            switch (dr.CustomerOrderSlip!.Product!.ProductName)
+                            switch (productName)
                             {
                                 case "BIODIESEL":
                                     retailBiodieselQuantitySum  += volume;
@@ -3433,7 +3436,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             industrialOverallCommissionSum += commissionAmount;
                             industrialOverallNetMarginSum += netMarginAmount;
 
-                            switch (dr.CustomerOrderSlip!.Product!.ProductName)
+                            switch (productName)
                             {
                                 case "BIODIESEL":
                                     industrialBiodieselQuantitySum  += volume;
@@ -3479,7 +3482,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             governmentOverallCommissionSum += commissionAmount;
                             governmentOverallNetMarginSum += netMarginAmount;
 
-                            switch (dr.CustomerOrderSlip!.Product!.ProductName)
+                            switch (productName)
                             {
                                 case "BIODIESEL":
                                     governmentBiodieselQuantitySum  += volume;
@@ -3525,7 +3528,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             resellerOverallCommissionSum += commissionAmount;
                             resellerOverallNetMarginSum += netMarginAmount;
 
-                            switch (dr.CustomerOrderSlip!.Product!.ProductName)
+                            switch (productName)
                             {
                                 case "BIODIESEL":
                                     resellerBiodieselQuantitySum  += volume;
@@ -3577,7 +3580,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     gmReportWorksheet.Cells[row, 5].Value = string.Join(", ", rrNumbers);
                     gmReportWorksheet.Cells[row, 6].Value = dr.DeliveryReceiptNo;
                     gmReportWorksheet.Cells[row, 7].Value = dr.CustomerOrderSlip.CustomerName;
-                    gmReportWorksheet.Cells[row, 8].Value = dr.PurchaseOrder.ProductName;
+                    gmReportWorksheet.Cells[row, 8].Value = productName;
                     gmReportWorksheet.Cells[row, 9].Value = dr.CustomerOrderSlip.AccountSpecialist;
                     gmReportWorksheet.Cells[row, 10].Value = dr.HaulerName;
                     gmReportWorksheet.Cells[row, 11].Value = dr.CustomerOrderSlip.CommissioneeName;
