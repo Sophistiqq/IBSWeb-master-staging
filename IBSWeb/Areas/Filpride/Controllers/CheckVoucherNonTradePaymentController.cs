@@ -679,7 +679,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
 
             // Validate PaymentDetails
-            if (viewModel.PaymentDetails == null || !viewModel.PaymentDetails.Any())
+            if (!viewModel.PaymentDetails.Any())
             {
                 TempData["error"] = "Payment details are required.";
                 viewModel.ChartOfAccounts = await _unitOfWork.GetChartOfAccountListAsyncByNo(cancellationToken);
@@ -1171,7 +1171,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 return View(viewModel);
             }
             // Validate PaymentDetails
-            if (viewModel.PaymentDetails == null || !viewModel.PaymentDetails.Any())
+            if (!viewModel.PaymentDetails.Any())
             {
                 TempData["error"] = "Payment details are required.";
                 viewModel.ChartOfAccounts = await _unitOfWork.GetChartOfAccountListAsyncByNo(cancellationToken);
@@ -1181,7 +1181,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 return View(viewModel);
             }
             // Validate payment amounts against remaining balances
-            var cvIds = viewModel.MultipleCvId ?? new int[0];
+            var cvIds = viewModel.MultipleCvId ?? [];
             var cvHeaders = await _dbContext.FilprideCheckVoucherHeaders
                 .Where(cv => cvIds.Contains(cv.CheckVoucherHeaderId))
                 .Select(cv => new
@@ -1599,7 +1599,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
             var firstParticulars = invoices.FirstOrDefault()?.CheckVoucherHeader?.Particulars ?? "";
 
             var journalEntries = new List<object>();
-            var totalDebit = 0m;
             var cvBalances = new List<object>();
 
             // Deduplicate invoices at header level to avoid duplicates
@@ -1694,7 +1693,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Debit = balance,
                     Credit = 0m
                 });
-                totalDebit += balance;
             }
 
             // Add Cash in Bank entry
