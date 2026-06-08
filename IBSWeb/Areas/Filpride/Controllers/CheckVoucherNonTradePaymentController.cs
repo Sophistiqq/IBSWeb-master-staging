@@ -804,6 +804,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 #region -- Saving the default entries --
 
+                var supplier = await _unitOfWork.FilprideSupplier
+                    .GetAsync(po => po.SupplierId == viewModel.MultipleSupplierId, cancellationToken);
+
+                if (supplier == null)
+                {
+                    return NotFound();
+                }
+
                 #region  -- Get bank account
 
                 var bank = await _unitOfWork.FilprideBankAccount
@@ -830,14 +838,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 existingHeaderModel.CvType = nameof(CVType.Payment);
                 existingHeaderModel.Reference = string.Join(", ", invoicingVoucher.Select(inv => inv.CheckVoucherHeaderNo));
                 existingHeaderModel.BankId = viewModel.BankId;
-                existingHeaderModel.Payee = viewModel.Payee;
-                existingHeaderModel.Address = viewModel.PayeeAddress;
-                existingHeaderModel.Tin = viewModel.PayeeTin;
+                existingHeaderModel.Payee = supplier.SupplierName;
+                existingHeaderModel.Address = supplier.SupplierAddress;
+                existingHeaderModel.Tin = supplier.SupplierTin;
                 existingHeaderModel.CheckNo = viewModel.CheckNo;
                 existingHeaderModel.CheckDate = viewModel.CheckDate;
                 existingHeaderModel.CheckAmount = viewModel.Total;
                 existingHeaderModel.Total = viewModel.Total;
                 existingHeaderModel.OldCvNo = viewModel.OldCVNo;
+                existingHeaderModel.SupplierName = supplier.SupplierName;
                 existingHeaderModel.BankAccountName = bank.AccountName;
                 existingHeaderModel.BankAccountNumber = bank.AccountNo;
 
@@ -1306,9 +1315,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     CvType = nameof(CVType.Payment),
                     Reference = string.Join(", ", invoicingVoucher.Select(inv => inv.CheckVoucherHeaderNo)),
                     BankId = viewModel.BankId,
-                    Payee = viewModel.Payee,
-                    Address = viewModel.PayeeAddress,
-                    Tin = viewModel.PayeeTin,
+                    Payee = supplier.SupplierName,
+                    Address = supplier.SupplierAddress,
+                    Tin = supplier.SupplierTin,
                     CheckNo = viewModel.CheckNo,
                     CheckDate = viewModel.CheckDate,
                     CheckAmount = viewModel.Total,
@@ -1784,6 +1793,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     return NotFound();
                 }
 
+                var supplierSubAccountName = (await _subAccountResolver.ResolveAsync(
+                    SubAccountType.Supplier,
+                    viewModel.SupplierId,
+                    cancellationToken))?.Name ?? supplier.SupplierName;
+
                 FilprideCheckVoucherHeader checkVoucherHeader = new()
                 {
                     CheckVoucherHeaderNo = await _unitOfWork.FilprideCheckVoucher.GenerateCodeMultiplePaymentAsync(companyClaims, viewModel.DocumentType!, cancellationToken),
@@ -1796,11 +1810,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Category = "Non-Trade",
                     CvType = nameof(CVType.Payment),
                     BankId = viewModel.BankId,
-                    Payee = viewModel.Payee,
+                    Payee = supplier.SupplierName,
                     SupplierId = viewModel.SupplierId,
                     SupplierName = supplier.SupplierName,
-                    Address = viewModel.PayeeAddress,
-                    Tin = viewModel.PayeeTin,
+                    Address = supplier.SupplierAddress,
+                    Tin = supplier.SupplierTin,
                     CheckNo = viewModel.CheckNo,
                     CheckDate = viewModel.CheckDate,
                     CheckAmount = viewModel.Total,
@@ -1836,7 +1850,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         Credit = 0,
                         SubAccountType = SubAccountType.Supplier,
                         SubAccountId = viewModel.SupplierId,
-                        SubAccountName = viewModel.Payee
+                        SubAccountName = supplierSubAccountName
                     },
 
                     new()
@@ -2004,6 +2018,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     return NotFound();
                 }
 
+                var supplierSubAccountName = (await _subAccountResolver.ResolveAsync(
+                    SubAccountType.Supplier,
+                    viewModel.SupplierId,
+                    cancellationToken))?.Name ?? supplier.SupplierName;
+
                 #region Update Record
 
                 #region  -- Get bank account
@@ -2026,10 +2045,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 existingHeaderModel.EditedBy = GetUserFullName();
                 existingHeaderModel.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
                 existingHeaderModel.BankId = viewModel.BankId;
-                existingHeaderModel.Payee = viewModel.Payee;
-                existingHeaderModel.SupplierName = viewModel.Payee;
-                existingHeaderModel.Address = viewModel.PayeeAddress;
-                existingHeaderModel.Tin = viewModel.PayeeTin;
+                existingHeaderModel.Payee = supplier.SupplierName;
+                existingHeaderModel.Address = supplier.SupplierAddress;
+                existingHeaderModel.Tin = supplier.SupplierTin;
                 existingHeaderModel.CheckNo = viewModel.CheckNo;
                 existingHeaderModel.CheckDate = viewModel.CheckDate;
                 existingHeaderModel.CheckAmount = viewModel.Total;
@@ -2068,7 +2086,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         Credit = 0,
                         SubAccountType = SubAccountType.Supplier,
                         SubAccountId = viewModel.SupplierId,
-                        SubAccountName = viewModel.Payee
+                        SubAccountName = supplierSubAccountName
                     },
 
                     new()
@@ -2202,6 +2220,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     return NotFound();
                 }
 
+                var supplierSubAccountName = (await _subAccountResolver.ResolveAsync(
+                    SubAccountType.Supplier,
+                    viewModel.SupplierId,
+                    cancellationToken))?.Name ?? supplier.SupplierName;
+
                 #endregion --Retrieve Supplier
 
                 #region  -- Get bank account
@@ -2228,9 +2251,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Category = "Non-Trade",
                     CvType = nameof(CVType.Payment),
                     BankId = viewModel.BankId,
-                    Payee = viewModel.Payee,
-                    Address = viewModel.PayeeAddress,
-                    Tin = viewModel.PayeeTin,
+                    Payee = supplier.SupplierName,
+                    Address = supplier.SupplierAddress,
+                    Tin = supplier.SupplierTin,
                     CheckNo = viewModel.CheckNo,
                     CheckDate = viewModel.CheckDate,
                     Company = companyClaims,
@@ -2281,7 +2304,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Credit = 0,
                     SubAccountType = SubAccountType.Supplier,
                     SubAccountId = viewModel.SupplierId,
-                    SubAccountName = viewModel.Payee,
+                    SubAccountName = supplierSubAccountName,
                 });
 
                 if (ewtTitle != null && ewtAmount > 0)
@@ -2467,6 +2490,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     return NotFound();
                 }
 
+                var supplierSubAccountName = (await _subAccountResolver.ResolveAsync(
+                    SubAccountType.Supplier,
+                    viewModel.SupplierId,
+                    cancellationToken))?.Name ?? supplier.SupplierName;
+
                 #endregion --Retrieve Supplier
 
                 #region  -- Get bank account
@@ -2487,9 +2515,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 existingHeaderModel.EditedBy = GetUserFullName();
                 existingHeaderModel.EditedDate = DateTimeHelper.GetCurrentPhilippineTime();
                 existingHeaderModel.BankId = viewModel.BankId;
-                existingHeaderModel.Payee = viewModel.Payee;
-                existingHeaderModel.Address = viewModel.PayeeAddress;
-                existingHeaderModel.Tin = viewModel.PayeeTin;
+                existingHeaderModel.Payee = supplier.SupplierName;
+                existingHeaderModel.Address = supplier.SupplierAddress;
+                existingHeaderModel.Tin = supplier.SupplierTin;
                 existingHeaderModel.CheckNo = viewModel.CheckNo;
                 existingHeaderModel.CheckDate = viewModel.CheckDate;
                 existingHeaderModel.SupplierId = viewModel.SupplierId;
@@ -2540,7 +2568,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Credit = 0,
                     SubAccountType = SubAccountType.Supplier,
                     SubAccountId = viewModel.SupplierId,
-                    SubAccountName = viewModel.Payee,
+                    SubAccountName = supplierSubAccountName,
                 });
 
                 if (ewtTitle != null && ewtAmount > 0)
