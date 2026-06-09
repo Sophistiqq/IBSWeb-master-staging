@@ -400,7 +400,7 @@
                                     dropdownContent += `<li><a class="dropdown-item" href="javascript:void(0);" onclick="updateSupplierSalesOrderNo(${data})">Update Sales Order#</a></li>`;
                                 }
 
-                                if (row.quantityReceived === 0 && !row.isSubPo && isAdmin && !row.isClosed) {
+                                if (row.quantityReceived === 0 && isAdmin && !row.isClosed) {
                                     dropdownContent += `
                                         <li><a class="dropdown-item" href="javascript:void(0);" onclick="confirmVoid(${data})">Void</a></li>
                                     `;

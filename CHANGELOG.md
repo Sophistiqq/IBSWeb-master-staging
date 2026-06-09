@@ -16,6 +16,7 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 
 ### Fixed
 - Fixed the Filpride AP Monitoring Report export to include open purchase orders with outstanding balances from prior months, align topsheet grouping with the per-supplier worksheets, and compute unlifted quantities based on posted receiving reports through the selected month-end.
+- Removed the Filpride purchase order listing restriction that hid the Admin void action for sub POs with zero received quantity and non-closed status.
 
 ---
 
