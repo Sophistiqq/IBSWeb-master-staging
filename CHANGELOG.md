@@ -14,6 +14,9 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 - Reworked the Filpride `COS Summary Report` export to use customer order slip records directly instead of the sales report dataset, so the generated workbook now reflects the COS list by selected COS date range.
 - Revised the `COS Summary Report` Excel worksheets to show COS-centric columns and totals, including delivered volume, balance volume, price, and COS status, and renamed the month-to-date sheet/output filename to match the COS summary report.
 
+### Fixed
+- Fixed the Filpride AP Monitoring Report export to include open purchase orders with outstanding balances from prior months, align topsheet grouping with the per-supplier worksheets, and compute unlifted quantities based on posted receiving reports through the selected month-end.
+
 ---
 
 ## [v3.0.3] - 2026-06-06
