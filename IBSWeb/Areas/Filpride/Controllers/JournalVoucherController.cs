@@ -2425,7 +2425,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     Text = x.ToString()
                 })
                 .ToList();
-            viewModel.SubAccountList = await _unitOfWork.GetChartOfAccountListAsyncByNo(cancellationToken);
 
             return View(viewModel);
         }
@@ -2863,6 +2862,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             return Json(selectList);
         }
 
+        [HttpGet]
         public async Task<IActionResult> SubAccountTypeList(string subAccountType, CancellationToken cancellationToken)
         {
             object subAccountTypeList = subAccountType switch
