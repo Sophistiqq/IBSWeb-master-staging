@@ -2530,11 +2530,10 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             cancellationToken
                         );
 
-                        if (subAccountInfo == null)
+                        if (subAccountInfo != null)
                         {
-                            throw new NullReferenceException($"Sub account id {acctNo.SubAccountId} not found");
+                            subAccountName = subAccountInfo.Name;
                         }
-                        subAccountName = subAccountInfo.Name;
                     }
 
                     jvDetails.Add(
@@ -2755,11 +2754,10 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             cancellationToken
                         );
 
-                        if (subAccountInfo == null)
+                        if (subAccountInfo != null)
                         {
-                            throw new NullReferenceException($"Sub account id {acctNo.SubAccountId} not found");
+                            subAccountName = subAccountInfo.Name;
                         }
-                        subAccountName = subAccountInfo.Name;
                     }
 
                     jvDetails.Add(
