@@ -17,7 +17,9 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System.Linq.Dynamic.Core;
 using System.Security.Claims;
+using IBS.DTOs;
 using IBS.Models.Filpride.MasterFile;
+using IBS.Services;
 
 namespace IBSWeb.Areas.Filpride.Controllers
 {
@@ -35,12 +37,19 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
         private const string FilterTypeClaimType = "JournalVoucher.FilterType";
 
-        public JournalVoucherController(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, IUnitOfWork unitOfWork, ILogger<JournalVoucherController> logger)
+        private readonly ISubAccountResolver _subAccountResolver;
+
+        public JournalVoucherController(ApplicationDbContext dbContext,
+            UserManager<ApplicationUser> userManager,
+            IUnitOfWork unitOfWork,
+            ILogger<JournalVoucherController> logger,
+            ISubAccountResolver subAccountResolver)
         {
             _dbContext = dbContext;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _subAccountResolver = subAccountResolver;
         }
 
         private string GetUserFullName()
@@ -2460,6 +2469,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             viewModel.CoaList = await _unitOfWork.GetChartOfAccountListAsyncByNo(cancellationToken);
 
+            viewModel.SubAccountTypeList = Enum.GetValues<SubAccountType>()
+                .Select(x => new SelectListItem
+                {
+                    Value = x.ToString(),
+                    Text = x.ToString()
+                })
+                .ToList();
+
             if (!ModelState.IsValid)
             {
                 TempData["warning"] = "The information you submitted is not valid!";
@@ -2512,6 +2529,23 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                       ?? throw new NullReferenceException($"Bank account id {acctNo.SubAccountId} not found");
                     }
 
+                    string? subAccountName = null;
+
+                    if (acctNo.SubAccountType.HasValue && acctNo.SubAccountId.HasValue)
+                    {
+                        SubAccountInfoDto? subAccountInfo = await _subAccountResolver.ResolveAsync(
+                            acctNo.SubAccountType.Value,
+                            acctNo.SubAccountId.Value,
+                            cancellationToken
+                        );
+
+                        if (subAccountInfo == null)
+                        {
+                            throw new NullReferenceException($"Sub account id {acctNo.SubAccountId} not found");
+                        }
+                        subAccountName = subAccountInfo.Name;
+                    }
+
                     jvDetails.Add(
                         new FilprideJournalVoucherDetail
                         {
@@ -2522,9 +2556,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             Debit = acctNo.Debit,
                             Credit = acctNo.Credit,
                             SubAccountId = acctNo.SubAccountId,
-                            SubAccountName = checkIfBankAccount
-                                ? bankAccount.AccountNo + " " + bankAccount.AccountName
-                                : acctNo.SubAccountName,
+                            SubAccountName = subAccountName,
                             SubAccountType = acctNo.SubAccountType
                         }
                     );
@@ -2664,6 +2696,14 @@ namespace IBSWeb.Areas.Filpride.Controllers
             viewModel.MinDate = await _unitOfWork
                 .GetMinimumPeriodBasedOnThePostedPeriods(Module.JournalVoucher, cancellationToken);
 
+            viewModel.SubAccountTypeList = Enum.GetValues<SubAccountType>()
+                .Select(x => new SelectListItem
+                {
+                    Value = x.ToString(),
+                    Text = x.ToString()
+                })
+                .ToList();
+
             viewModel.CoaList = await _unitOfWork.GetChartOfAccountListAsyncByNo(cancellationToken);
 
             if (!ModelState.IsValid)
@@ -2713,13 +2753,22 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                            .GetAsync(coa => coa.AccountNumber == acctNo.AccountNo, cancellationToken)
                                        ?? throw new NullReferenceException($"Account number {acctNo.AccountNo} not found");
 
-                    var checkIfBankAccount = acctNo.SubAccountType == SubAccountType.BankAccount;
-                    var bankAccount = new FilprideBankAccount();
-                    if (checkIfBankAccount)
+
+                    string? subAccountName = null;
+
+                    if (acctNo.SubAccountType.HasValue && acctNo.SubAccountId.HasValue)
                     {
-                        bankAccount = await _unitOfWork.FilprideBankAccount
-                                          .GetAsync(x => x.BankAccountId == acctNo.SubAccountId, cancellationToken)
-                                      ?? throw new NullReferenceException($"Bank account id {acctNo.SubAccountId} not found");
+                        SubAccountInfoDto? subAccountInfo = await _subAccountResolver.ResolveAsync(
+                            acctNo.SubAccountType.Value,
+                            acctNo.SubAccountId.Value,
+                            cancellationToken
+                        );
+
+                        if (subAccountInfo == null)
+                        {
+                            throw new NullReferenceException($"Sub account id {acctNo.SubAccountId} not found");
+                        }
+                        subAccountName = subAccountInfo.Name;
                     }
 
                     jvDetails.Add(
@@ -2732,9 +2781,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             Debit = acctNo.Debit,
                             Credit = acctNo.Credit,
                             SubAccountId = acctNo.SubAccountId,
-                            SubAccountName = checkIfBankAccount
-                                ? bankAccount.AccountNo + " " + bankAccount.AccountName
-                                : acctNo.SubAccountName,
+                            SubAccountName = subAccountName,
                             SubAccountType = acctNo.SubAccountType
                         }
                     );
