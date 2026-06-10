@@ -2520,15 +2520,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                            .GetAsync(coa => coa.AccountNumber == acctNo.AccountNo, cancellationToken)
                                        ?? throw new NullReferenceException($"Account number {acctNo.AccountNo} not found");
 
-                    var checkIfBankAccount = acctNo.SubAccountType == SubAccountType.BankAccount;
-                    var bankAccount = new FilprideBankAccount();
-                    if (checkIfBankAccount)
-                    {
-                        bankAccount = await _unitOfWork.FilprideBankAccount
-                                          .GetAsync(x => x.BankAccountId == acctNo.SubAccountId, cancellationToken)
-                                      ?? throw new NullReferenceException($"Bank account id {acctNo.SubAccountId} not found");
-                    }
-
                     string? subAccountName = null;
 
                     if (acctNo.SubAccountType.HasValue && acctNo.SubAccountId.HasValue)
