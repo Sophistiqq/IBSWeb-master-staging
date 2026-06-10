@@ -6,6 +6,13 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 
 ---
 
+## [v3.0.5] - 2026-06-10
+
+### Fixed
+- Fixed the Filpride Sales Invoice print preview withholding tax and withholding VAT amount calculations to reuse the invoice net-of-VAT amount consistently.
+
+---
+
 ## [v3.0.4] - 2026-06-09
 
 ### Changed
