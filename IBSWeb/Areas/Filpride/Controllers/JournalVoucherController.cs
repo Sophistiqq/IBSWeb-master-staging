@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System.Linq.Dynamic.Core;
 using System.Security.Claims;
+using IBS.Models.Filpride.MasterFile;
 
 namespace IBSWeb.Areas.Filpride.Controllers
 {
@@ -2502,6 +2503,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                            .GetAsync(coa => coa.AccountNumber == acctNo.AccountNo, cancellationToken)
                                        ?? throw new NullReferenceException($"Account number {acctNo.AccountNo} not found");
 
+                    var checkIfBankAccount = acctNo.SubAccountType == SubAccountType.BankAccount;
+                    var bankAccount = new FilprideBankAccount();
+                    if (checkIfBankAccount)
+                    {
+                        bankAccount = await _unitOfWork.FilprideBankAccount
+                                          .GetAsync(x => x.BankAccountId == acctNo.SubAccountId, cancellationToken)
+                                      ?? throw new NullReferenceException($"Bank account id {acctNo.SubAccountId} not found");
+                    }
+
                     jvDetails.Add(
                         new FilprideJournalVoucherDetail
                         {
@@ -2512,7 +2522,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             Debit = acctNo.Debit,
                             Credit = acctNo.Credit,
                             SubAccountId = acctNo.SubAccountId,
-                            SubAccountName = acctNo.SubAccountName,
+                            SubAccountName = checkIfBankAccount
+                                ? bankAccount.AccountNo + " " + bankAccount.AccountName
+                                : acctNo.SubAccountName,
                             SubAccountType = acctNo.SubAccountType
                         }
                     );
@@ -2701,6 +2713,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                            .GetAsync(coa => coa.AccountNumber == acctNo.AccountNo, cancellationToken)
                                        ?? throw new NullReferenceException($"Account number {acctNo.AccountNo} not found");
 
+                    var checkIfBankAccount = acctNo.SubAccountType == SubAccountType.BankAccount;
+                    var bankAccount = new FilprideBankAccount();
+                    if (checkIfBankAccount)
+                    {
+                        bankAccount = await _unitOfWork.FilprideBankAccount
+                                          .GetAsync(x => x.BankAccountId == acctNo.SubAccountId, cancellationToken)
+                                      ?? throw new NullReferenceException($"Bank account id {acctNo.SubAccountId} not found");
+                    }
+
                     jvDetails.Add(
                         new FilprideJournalVoucherDetail
                         {
@@ -2711,7 +2732,9 @@ namespace IBSWeb.Areas.Filpride.Controllers
                             Debit = acctNo.Debit,
                             Credit = acctNo.Credit,
                             SubAccountId = acctNo.SubAccountId,
-                            SubAccountName = acctNo.SubAccountName,
+                            SubAccountName = checkIfBankAccount
+                                ? bankAccount.AccountNo + " " + bankAccount.AccountName
+                                : acctNo.SubAccountName,
                             SubAccountType = acctNo.SubAccountType
                         }
                     );
