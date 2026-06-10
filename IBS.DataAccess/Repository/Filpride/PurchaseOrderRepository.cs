@@ -4,7 +4,6 @@ using IBS.DTOs;
 using IBS.Models.Enums;
 using IBS.Models.Filpride.AccountsPayable;
 using IBS.Models.Filpride.Integrated;
-using IBS.Utility.Constants;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -238,7 +237,6 @@ namespace IBS.DataAccess.Repository.Filpride
                     break;
                 }
 
-                var purchaseOrder = receivingReport.PurchaseOrder!;
                 // Calculate effective volume
                 var effectiveVolume = Math.Min(receivingReport.QuantityReceived, remainingVolume);
                 var updatedAmount = effectiveVolume * model.TriggeredPrice;
