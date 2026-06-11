@@ -81,11 +81,19 @@ builder.Services.AddScoped<IGoogleDriveService, GoogleDriveService>();
 builder.Services.AddScoped<IHubConnectionRepository, HubConnectionRepository>();
 builder.Services.AddScoped<IMonthlyClosureService, MonthlyClosureService>();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
-builder.Services.AddSingleton<ICloudStorageService, CloudStorageService>();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<ICloudStorageService, LocalFileStorageService>();
+}
+else
+{
+    builder.Services.AddSingleton<ICloudStorageService, CloudStorageService>();
+}
 builder.Services.AddScoped<ISubAccountResolver, SubAccountResolver>();
 builder.Services.AddScoped<ITransactionMasterControlService, TransactionMasterControlService>();
 builder.Services.AddScoped<StartOfTheMonthService>();
 builder.Services.AddScoped<DailyService>();
+builder.Services.AddScoped<IDbSyncService, DbSyncService>();
 
 // SignalR
 builder.Services.AddSignalR();
@@ -149,6 +157,26 @@ if (!app.Environment.IsDevelopment())
 }
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+// Enable serving files from local storage in development
+if (app.Environment.IsDevelopment())
+{
+    var localStoragePathConfig = app.Configuration["LocalStoragePath"] ?? "App_Data/LocalStorage";
+    var localStoragePath = Path.IsPathRooted(localStoragePathConfig)
+        ? localStoragePathConfig
+        : Path.Combine(app.Environment.ContentRootPath, localStoragePathConfig);
+
+    if (!Directory.Exists(localStoragePath))
+    {
+        Directory.CreateDirectory(localStoragePath);
+    }
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(localStoragePath),
+        RequestPath = "/local-storage"
+    });
+}
 
 app.UseStaticFiles();
 app.UseRouting();

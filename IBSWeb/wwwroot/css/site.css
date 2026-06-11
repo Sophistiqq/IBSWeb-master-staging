@@ -13,6 +13,10 @@ main {
     margin-bottom: 4rem !important;
 }
 
+.staging-bg {
+    background: #953104;
+}
+
 /*body {*/
 /*    font-family: 'Roboto Mono', monospace;*/
 /*}*/
@@ -65,7 +69,7 @@ h2 {
     html {
         font-size: 16px;
     }
-    
+
     .responsive-index-button {
         font-size: 13px;
     }
@@ -573,7 +577,7 @@ table {
     table td {
         font-size: 0.80em; /* Adjust as needed */
     }
-    
+
 .glowfilter {
     -webkit-filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
     filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.7));
