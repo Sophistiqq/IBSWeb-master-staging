@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mmsi-ibs": {
+      "command": "node",
+      "args": [
+        "C:/Users/MIS2/source/repos/IBSWeb-master-staging/mcp-server/build/index.js"
+      ],
+      "cwd": "C:/Users/MIS2/source/repos/IBSWeb-master-staging/mcp-server",
+      "env": {
+        "PROJECT_ROOT": "C:/Users/MIS2/source/repos/IBSWeb-master-staging"
+      }
+    }
+  }
+}
