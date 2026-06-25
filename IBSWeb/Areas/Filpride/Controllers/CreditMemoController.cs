@@ -276,6 +276,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     model.CreditMemoNo = await _unitOfWork.FilprideCreditMemo.GenerateCodeAsync(companyClaims, existingSalesInvoice!.Type, cancellationToken);
                     model.Type = existingSalesInvoice.Type;
                     model.CreditAmount = (decimal)(model.Quantity! * -model.AdjustedPrice!);
+                    existingSalesInvoice.Balance -= Math.Abs(model.CreditAmount);
                 }
                 else if (model.Source == "Service Invoice")
                 {
@@ -421,6 +422,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         existingCm.AdjustedPrice = model.AdjustedPrice;
                         existingCm.Description = model.Description;
                         existingCm.Remarks = model.Remarks;
+                        existingCm.SalesInvoice!.Balance += Math.Abs(existingCm.CreditAmount);
+                        existingCm.SalesInvoice!.Balance -= (decimal)(model.Quantity! * model.AdjustedPrice!);
 
                         #endregion -- Saving Default Enries --
 

@@ -279,6 +279,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     model.DebitMemoNo = await _unitOfWork.FilprideDebitMemo.GenerateCodeAsync(companyClaims, existingSalesInvoice!.Type, cancellationToken);
                     model.Type = existingSalesInvoice.Type;
                     model.DebitAmount = (decimal)(model.Quantity! * model.AdjustedPrice!);
+                    existingSalesInvoice.Balance += model.DebitAmount;
                 }
                 else if (model.Source == "Service Invoice")
                 {
@@ -891,6 +892,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         existingDm.AdjustedPrice = model.AdjustedPrice;
                         existingDm.Description = model.Description;
                         existingDm.Remarks = model.Remarks;
+                        existingDm.SalesInvoice!.Balance -= existingDm.DebitAmount;
+                        existingDm.SalesInvoice!.Balance += (decimal)(model.Quantity! * model.AdjustedPrice!);
 
                         #endregion -- Saving Default Enries --
 
