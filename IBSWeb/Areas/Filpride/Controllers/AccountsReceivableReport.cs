@@ -4559,16 +4559,20 @@ namespace IBSWeb.Areas.Filpride.Controllers
                                 x.Status != nameof(DmCmStatus.Canceled) &&
                                 x.Status != nameof(DmCmStatus.Voided))
                     .GroupBy(x => x.SalesInvoiceId!.Value)
-                    .Select(x => x.First())
-                    .ToDictionaryAsync(x => x.SalesInvoiceId!.Value, cancellationToken);
+                    .ToDictionaryAsync(
+                        g => g.Key,
+                        g => g.Sum(x => x.DebitAmount),
+                        cancellationToken);
                 var creditMemoDictionary = await _dbContext.FilprideCreditMemos
                     .Where(x => x.SalesInvoiceId.HasValue &&
                                 salesInvoiceId.Contains(x.SalesInvoiceId.Value) &&
                                 x.Status != nameof(DmCmStatus.Canceled) &&
                                 x.Status != nameof(DmCmStatus.Voided))
                     .GroupBy(x => x.SalesInvoiceId!.Value)
-                    .Select(x => x.First())
-                    .ToDictionaryAsync(x => x.SalesInvoiceId!.Value, cancellationToken);
+                    .ToDictionaryAsync(
+                        g => g.Key,
+                        g => g.Sum(x => x.CreditAmount),
+                        cancellationToken);
 
                 foreach (var groupByCustomer in salesInvoice.GroupBy(x => x.Customer))
                 {
@@ -4591,18 +4595,8 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         var isCwvatAmountPaid = si.IsTaxAndVatPaid ? cwvatAmount : 0m;
                         var cwvatBalance = RoundToFour(cwvatAmount - isCwvatAmountPaid);
 
-                        debitMemoDictionary.TryGetValue(si.SalesInvoiceId, out var debitMemo);
-                        creditMemoDictionary.TryGetValue(si.SalesInvoiceId, out var creditMemo);
-
-                        var debitAmount = debitMemo?.Status != nameof(DmCmStatus.Canceled) &&
-                                          debitMemo?.Status != nameof(DmCmStatus.Voided)
-                            ? debitMemo?.DebitAmount ?? 0.00m
-                            : 0.00m;
-
-                        var creditAmount = creditMemo?.Status != nameof(DmCmStatus.Canceled) &&
-                                           creditMemo?.Status != nameof(DmCmStatus.Voided)
-                            ? Math.Abs(creditMemo?.CreditAmount ?? 0.00m)
-                            : 0.00m;
+                        debitMemoDictionary.TryGetValue(si.SalesInvoiceId, out var debitAmount);
+                        creditMemoDictionary.TryGetValue(si.SalesInvoiceId, out var creditAmount);
 
                         worksheet.Cells[row, 1].Value = si.Customer?.CustomerCode;
                         worksheet.Cells[row, 2].Value = si.CustomerOrderSlip?.CustomerName ?? si.Customer?.CustomerName;
@@ -4716,19 +4710,13 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                     var subTotalDebitAmount = groupByCustomer
                         .Sum(x => debitMemoDictionary
-                            .TryGetValue(x.SalesInvoiceId, out var debitMemo)
-                        ? debitMemo?.Status != nameof(DmCmStatus.Canceled) &&
-                          debitMemo?.Status != nameof(DmCmStatus.Voided)
-                            ? debitMemo?.DebitAmount ?? 0.00m
-                            : 0.00m
+                            .TryGetValue(x.SalesInvoiceId, out var debitAmount)
+                        ? debitAmount
                         : 0m);
                     var subTotalCreditAmount = groupByCustomer
                         .Sum(x => creditMemoDictionary
-                            .TryGetValue(x.SalesInvoiceId, out var creditMemo)
-                        ? creditMemo?.Status != nameof(DmCmStatus.Canceled) &&
-                          creditMemo?.Status != nameof(DmCmStatus.Voided)
-                            ? Math.Abs(creditMemo?.CreditAmount ?? 0.00m)
-                            : 0.00m
+                            .TryGetValue(x.SalesInvoiceId, out var creditAmount)
+                        ? creditAmount
                         : 0m);
 
                     worksheet.Cells[row, 12].Value = "SUB TOTAL ";
