@@ -150,6 +150,13 @@ app.MapGet("/health", () => Results.Ok("Healthy")).AllowAnonymous();
 
 app.UseSerilogRequestLogging();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var db = services.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync(); // creates all tables automatically
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/User/Home/Error");
