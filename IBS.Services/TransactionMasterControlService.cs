@@ -690,7 +690,7 @@ namespace IBS.Services
                 var getHolidays = await DateTimeHelper.GetNonWorkingDays(salesInvoice.DueDate, collectionReceipt.DepositedDate.Value);
                 var daysDelayed = collectionReceipt.DepositedDate.Value.DayNumber - salesInvoice.DueDate.DayNumber - getHolidays.Count;
 
-                if (daysDelayed <= 0 || dr.CommissionAmount <= 0)
+                if (daysDelayed <= 0 || dr.CommissionAmount <= 0 || dr.IsCostOfMoneyApplied)
                 {
                     continue;
                 }
@@ -704,7 +704,7 @@ namespace IBS.Services
                 var wtaxAmount = hasWtax
                     ? unitOfWork.FilprideCollectionReceipt.ComputeEwtAmount(netOfVat, 0.01m)
                     : 0m;
-                var paymentAmount = receipt.Amount - (wvatAmount - wtaxAmount);
+                var paymentAmount = receipt.Amount - wvatAmount - wtaxAmount;
 
                 var costOfMoney = paymentAmount * .03m * daysDelayed / 360m;
 

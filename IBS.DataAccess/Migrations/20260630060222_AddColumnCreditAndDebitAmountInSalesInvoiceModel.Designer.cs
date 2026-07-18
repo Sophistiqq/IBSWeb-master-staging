@@ -3,6 +3,7 @@ using System;
 using IBS.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IBS.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630060222_AddColumnCreditAndDebitAmountInSalesInvoiceModel")]
+    partial class AddColumnCreditAndDebitAmountInSalesInvoiceModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3939,10 +3942,6 @@ namespace IBS.DataAccess.Migrations
                     b.Property<bool>("IsCommissionPaid")
                         .HasColumnType("boolean")
                         .HasColumnName("is_commission_paid");
-
-                    b.Property<bool>("IsCostOfMoneyApplied")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_cost_of_money_applied");
 
                     b.Property<bool>("IsFreightPaid")
                         .HasColumnType("boolean")

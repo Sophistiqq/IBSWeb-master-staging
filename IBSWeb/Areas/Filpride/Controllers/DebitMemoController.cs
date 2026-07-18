@@ -279,7 +279,6 @@ namespace IBSWeb.Areas.Filpride.Controllers
                     model.DebitMemoNo = await _unitOfWork.FilprideDebitMemo.GenerateCodeAsync(companyClaims, existingSalesInvoice!.Type, cancellationToken);
                     model.Type = existingSalesInvoice.Type;
                     model.DebitAmount = (decimal)(model.Quantity! * model.AdjustedPrice!);
-                    existingSalesInvoice.Balance += model.DebitAmount;
                 }
                 else if (model.Source == "Service Invoice")
                 {
@@ -704,7 +703,11 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 model.VoidedBy = GetUserFullName();
                 model.VoidedDate = DateTimeHelper.GetCurrentPhilippineTime();
                 model.Status = nameof(DmCmStatus.Voided);
-                model.SalesInvoice!.Balance -= model.DebitAmount;
+                if (model.SalesInvoice != null)
+                {
+                    model.SalesInvoice.Balance -= model.DebitAmount;
+                    model.SalesInvoice.DebitAmount -= model.DebitAmount;
+                }
 
                 await _unitOfWork.GeneralLedger.ReverseEntries(model.DebitMemoNo, cancellationToken);
 
@@ -748,8 +751,12 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 model.CanceledBy = GetUserFullName();
                 model.CanceledDate = DateTimeHelper.GetCurrentPhilippineTime();
                 model.CancellationRemarks = cancellationRemarks;
+                if (model.Status == nameof(DmCmStatus.ForPosting) && model.SalesInvoice != null)
+                {
+                    model.SalesInvoice.Balance -= model.DebitAmount;
+                    model.SalesInvoice.DebitAmount -= model.DebitAmount;
+                }
                 model.Status = nameof(DmCmStatus.Canceled);
-                model.SalesInvoice!.Balance -= model.DebitAmount;
 
                 #region --Audit Trail Recording
 
@@ -867,6 +874,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 Amount = viewModel.Amount,
                 Remarks = viewModel.Remarks,
                 Description = viewModel.Description,
+                DebitAmount = (decimal)(viewModel.Quantity! * viewModel.AdjustedPrice!)
             };
 
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -894,12 +902,15 @@ namespace IBSWeb.Areas.Filpride.Controllers
                         existingDm.AdjustedPrice = model.AdjustedPrice;
                         existingDm.Description = model.Description;
                         existingDm.Remarks = model.Remarks;
-                        existingDm.SalesInvoice!.Balance -= existingDm.DebitAmount;
-                        existingDm.SalesInvoice!.Balance += (decimal)(model.Quantity! * model.AdjustedPrice!);
+                        if (existingDm.Status == nameof(DmCmStatus.ForPosting))
+                        {
+                            existingDm.SalesInvoice!.Balance -= existingDm.DebitAmount;
+                            existingDm.SalesInvoice!.DebitAmount -= existingDm.DebitAmount;
+                        }
 
                         #endregion -- Saving Default Enries --
 
-                        existingDm.DebitAmount = (decimal)(model.Quantity! * model.AdjustedPrice!);
+                        existingDm.DebitAmount = model.DebitAmount;
                         break;
 
                     case "Service Invoice":
@@ -922,7 +933,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
                 if (existingDm.Status == nameof(DmCmStatus.ForPosting))
                 {
-                    existingDm.Status = nameof(DmCmStatus.ForCNCApproval);
+                    existingDm.Status = nameof(DmCmStatus.ForApprovalOfFM);
                 }
 
                 existingDm.EditedBy = GetUserFullName();
@@ -1416,7 +1427,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin,CncManager")]
+        [Authorize(Roles = "Admin,FinanceManager")]
         public async Task<IActionResult> Approve(int id, CancellationToken cancellationToken)
         {
             var model = await _unitOfWork.FilprideDebitMemo
@@ -1427,7 +1438,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
                 return NotFound();
             }
 
-            if (model.Status != nameof(DmCmStatus.ForCNCApproval))
+            if (model.Status != nameof(DmCmStatus.ForApprovalOfFM))
             {
                 TempData["error"] = "This record is not pending for approval.";
                 return RedirectToAction(nameof(Print), new { id });
@@ -1435,7 +1446,7 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             var isApprover =
                 User.IsInRole("Admin") ||
-                User.IsInRole("CncManager");
+                User.IsInRole("FinanceManager");
 
             if (!isApprover)
             {
@@ -1447,6 +1458,12 @@ namespace IBSWeb.Areas.Filpride.Controllers
 
             try
             {
+                if (model.SalesInvoice != null)
+                {
+                    model.SalesInvoice.Balance += model.DebitAmount;
+                    model.SalesInvoice.DebitAmount += model.DebitAmount;
+                }
+
                 model.ApprovedBy = GetUserFullName();
                 model.ApprovedDate = DateTimeHelper.GetCurrentPhilippineTime();
                 model.Status = nameof(DmCmStatus.ForPosting);

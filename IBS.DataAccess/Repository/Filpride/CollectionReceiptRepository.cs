@@ -120,7 +120,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = cashInBankTitle.AccountId,
                         AccountNo = cashInBankTitle.AccountNumber,
                         AccountTitle = cashInBankTitle.AccountName,
@@ -141,7 +141,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = cwt.AccountId,
                         AccountNo = cwt.AccountNumber,
                         AccountTitle = cwt.AccountName,
@@ -162,7 +162,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = cwv.AccountId,
                         AccountNo = cwv.AccountNumber,
                         AccountTitle = cwv.AccountName,
@@ -183,7 +183,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = arTradeTitle.AccountId,
                         AccountNo = arTradeTitle.AccountNumber,
                         AccountTitle = arTradeTitle.AccountName,
@@ -207,7 +207,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = arTradeCwt.AccountId,
                         AccountNo = arTradeCwt.AccountNumber,
                         AccountTitle = arTradeCwt.AccountName,
@@ -228,7 +228,7 @@ namespace IBS.DataAccess.Repository.Filpride
                     {
                         Date = collectionReceipt.TransactionDate,
                         Reference = collectionReceipt.CollectionReceiptNo!,
-                        Description = "Collection for Receivable",
+                        Description = $"Collection of Receivable, Manual CR No. {collectionReceipt.ReferenceNo}",
                         AccountId = arTradeCwv.AccountId,
                         AccountNo = arTradeCwv.AccountNumber,
                         AccountTitle = arTradeCwv.AccountName,
@@ -407,7 +407,7 @@ namespace IBS.DataAccess.Repository.Filpride
 
             if (si != null)
             {
-                var netDiscount = si.Amount - si.Discount;
+                var netDiscount = si.Amount - si.Discount + si.DebitAmount - si.CreditAmount;
 
                 si.AmountPaid += paidAmount;
                 si.Balance = netDiscount - si.AmountPaid;
@@ -488,7 +488,7 @@ namespace IBS.DataAccess.Repository.Filpride
 
                 if (!salesInvoice.IsPaid)
                 {
-                    decimal netDiscount = salesInvoice.Amount - salesInvoice.Discount;
+                    decimal netDiscount = salesInvoice.Amount - salesInvoice.Discount + salesInvoice.DebitAmount - salesInvoice.CreditAmount;
 
                     salesInvoice.AmountPaid += paidAmount[i];
 
@@ -833,6 +833,7 @@ namespace IBS.DataAccess.Repository.Filpride
             string currentUser, DateOnly depositedDate, CancellationToken cancellationToken = default)
         {
             deliveryReceipt.CommissionAmount -= costOfMoney;
+            deliveryReceipt.IsCostOfMoneyApplied = true;
             var commissionee = deliveryReceipt.Commissionee!;
             var ewtAmount = deliveryReceipt.CustomerOrderSlip!.CommissioneeTaxType == SD.TaxType_WithTax
                 ? ComputeEwtAmount(costOfMoney, commissionee.WithholdingTaxPercent ?? 0m)
