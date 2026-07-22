@@ -81,10 +81,10 @@
                 <input asp-for="CustomerType" type="hidden" />
                 <div class="row py-2">
                     <div class="form-floating col-md-6 col-12">
-                        <input asp-for="Date" 
-                               type="date" 
-                               class="form-control border-0 shadow" 
-                               placeholder="" 
+                        <input asp-for="Date"
+                               type="date"
+                               class="form-control border-0 shadow"
+                               placeholder=""
                                value="@DateTimeHelper.GetCurrentPhilippineTime().ToString("yyyy-MM-dd")"
                                min="@Model.MinDate.ToString("yyyy-MM-dd")"/>
                         <label asp-for="Date" class="ms-2">Date<span class="required">*</span></label>
@@ -277,14 +277,14 @@
                                     $('select[name="CommissioneeId"]').val(data.commissioneeId).trigger('change');
                                     $('input[name="CommissionRate"]').val(data.commissionRate);
                                 }
-                                
-                                
+
+
                                 // Populate Branches dropdown using fetched data
                                 populateBranches(data.branches);
-                                
+
 
                                 updateTermsEditability(data.hasMultipleTerms);
-                                
+
                             } else {
                                 $('input[name="CustomerAddress"]').val('');
                                 $('input[name="TinNo"]').val('');
@@ -345,7 +345,7 @@
             function updateTermsEditability(hasMultipleTerms) {
                 const termsSelect = $('#termsSelect');
                 let selectedValue = termsSelect.val(); // Get the current selected value
-                
+
                 if (hasMultipleTerms) {
                     termsSelect.prop('disabled', false);
                     termsSelect.removeClass('bg-light');
@@ -357,12 +357,12 @@
 
                     // This ensures the value is bound to your model
                     $('input[name="Terms"]').val(selectedValue);
-                    
+
                 }
             }
-            
 
-            
+
+
         });
     </script>
     <script>
