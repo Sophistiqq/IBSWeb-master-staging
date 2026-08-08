@@ -6,6 +6,58 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 
 ---
 
+## [v3.1.0] - 2026-08-07
+
+### Added
+- Added the migration of blended product.
+
+### Changed
+- Modified the COS, DR, RR, AP and AR reports to adopt the changes.
+---
+
+## [v3.0.10] - 2026-08-03
+
+### Changed
+- Updated Filpride accounts payable purchase report, gross margin report, and AP report summaries and Excel exports to build product sections dynamically from the persisted transaction product names instead of fixed product buckets.
+- Updated Filpride accounts receivable dispatch, sales, and COS summary report outputs to derive product columns from the persisted purchase order or customer order slip product names so historical product labels remain available even when the related product master navigation is missing or has changed.
+
+### Fixed
+- Fixed the Filpride sales report PDF and Excel summaries to keep per-customer-type and grand-total product totals keyed to `CustomerOrderSlip.ProductName`, preventing omitted or undercounted historical product amounts.
+- Fixed the Filpride delivered dispatch and COS unserved-volume PDF and Excel summaries to use `PurchaseOrder.ProductName`, preserving product totals when the related product navigation is null.
+
+---
+
+## [v3.0.9] - 2026-07-28
+
+### Changed
+- Updated debit memo and credit memo locked-period adjustment snapshots to also store the related trade supplier from the underlying sales invoice delivery receipt purchase order when available.
+- Updated Filpride sales invoice repository loading to include the related delivery receipt purchase order so supplier snapshot data is available during debit memo and credit memo approval processing.
+
+---
+
+## [v3.0.8] - 2026-07-28
+
+### Added
+- Added locked-period comparative adjustment support for approved debit memos and credit memos that affect prior sales invoice balances, including customer snapshot details and signed adjustment amounts in the sales comparative report dataset.
+
+### Changed
+- Updated Filpride debit memo and credit memo approval flows to automatically complete posting in the same transaction after approval, including creation of the related general ledger entries.
+- Updated the Filpride debit memo and credit memo print actions to reflect the combined `Approve & Post` workflow for records pending finance approval.
+- Updated the comparative sales adjustment filter to include debit memo and credit memo prior-sales effects alongside selling price adjustments.
+
+---
+
+## [v3.0.7] - 2026-07-28
+
+### Added
+- Added customer and supplier snapshot fields to locked-period adjustments so comparative adjustment records can retain the related party details used at the time the adjustment was recorded.
+
+### Changed
+- Updated locked-period adjustment creation flows for delivery receipt selling price, commission, freight, and receiving report unit cost updates to persist related customer and supplier snapshots when available.
+- Updated the Filpride comparative adjustment PDF output to populate the existing `Customer` and `Supplier` columns from the stored locked-period adjustment snapshot fields.
+
+---
+
 ## [v3.0.6] - 2026-06-10
 
 ### Added
@@ -27,9 +79,6 @@ and this project adheres to **Semantic Versioning (SemVer)**.
 
 ### Changed
 - Updated Filpride customer order slip creation to leave `ExpirationDate` blank for NPC customers as a temporary exception, while continuing to assign the standard 7-day expiration to other customers.
-- Renamed the Filpride `OTC Fuel Sales` report flow to `COS Summary Report`, including the controller actions, navigation entry, Razor view title, and Excel export action target.
-- Reworked the Filpride `COS Summary Report` export to use customer order slip records directly instead of the sales report dataset, so the generated workbook now reflects the COS list by selected COS date range.
-- Revised the `COS Summary Report` Excel worksheets to show COS-centric columns and totals, including delivered volume, balance volume, price, and COS status, and renamed the month-to-date sheet/output filename to match the COS summary report.
 
 ### Fixed
 - Fixed the Filpride AP Monitoring Report export to include open purchase orders with outstanding balances from prior months, align topsheet grouping with the per-supplier worksheets, and compute unlifted quantities based on posted receiving reports through the selected month-end.

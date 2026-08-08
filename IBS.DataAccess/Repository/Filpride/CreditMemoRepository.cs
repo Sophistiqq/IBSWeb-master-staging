@@ -238,13 +238,13 @@ namespace IBS.DataAccess.Repository.Filpride
                 decimal netAmount;
                 if (serviceInvoice.VatType == SD.VatType_Vatable)
                 {
-                    netAmount = (model.Amount ?? 0m - serviceInvoice.Discount) / 1.12m;
+                    netAmount = ((model.Amount ?? 0m) - serviceInvoice.Discount) / 1.12m;
                     var total = Math.Round((model.Amount ?? 0m) / 1.12m, 4);
                     var roundedNetAmount = Math.Round(netAmount, 4);
                     if (roundedNetAmount > total)
                     {
                         var shortAmount = netAmount - total;
-                        netAmount += shortAmount;
+                        netAmount -= shortAmount;
                     }
                 }
                 else
@@ -394,6 +394,9 @@ namespace IBS.DataAccess.Repository.Filpride
                 .ThenInclude(s => s!.Customer)
                 .Include(c => c.SalesInvoice)
                 .ThenInclude(s => s!.CustomerOrderSlip)
+                .Include(c => c.SalesInvoice)
+                .ThenInclude(s => s!.DeliveryReceipt)
+                .ThenInclude(dr => dr!.PurchaseOrder)
                 .Include(c => c.ServiceInvoice)
                 .ThenInclude(sv => sv!.Customer)
                 .Include(c => c.ServiceInvoice)
@@ -410,6 +413,9 @@ namespace IBS.DataAccess.Repository.Filpride
                 .ThenInclude(s => s!.Customer)
                 .Include(c => c.SalesInvoice)
                 .ThenInclude(s => s!.CustomerOrderSlip)
+                .Include(c => c.SalesInvoice)
+                .ThenInclude(s => s!.DeliveryReceipt)
+                .ThenInclude(dr => dr!.PurchaseOrder)
                 .Include(c => c.ServiceInvoice)
                 .ThenInclude(sv => sv!.Customer)
                 .Include(c => c.ServiceInvoice)

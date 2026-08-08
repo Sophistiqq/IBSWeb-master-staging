@@ -48,13 +48,11 @@ namespace IBS.DataAccess.Repository.Filpride
 
             // Calculate initial values
 
-            var cost = Math.Round(receivingReport.Amount / receivingReport.QuantityReceived, 4);
+            var total = ComputeVatAwareAmount(receivingReport.Amount, receivingReport.PurchaseOrder!.VatType);
+            var cost = GetRoundedUnitValue(total, receivingReport.QuantityReceived);
 
             var inventoryBalance = (previousInventory?.InventoryBalance ?? 0) + receivingReport.QuantityReceived;
             var averageCost = cost;
-            var total = receivingReport.PurchaseOrder!.VatType == SD.VatType_Vatable
-                ? ComputeNetOfVat(receivingReport.QuantityReceived * cost)
-                : receivingReport.QuantityReceived * cost;
             var totalBalance = inventoryBalance * averageCost;
 
             // Create new inventory entry
@@ -119,10 +117,46 @@ namespace IBS.DataAccess.Repository.Filpride
 
         public async Task AddSalesToInventoryAsync(FilprideDeliveryReceipt deliveryReceipt, CancellationToken cancellationToken = default)
         {
+            if (deliveryReceipt.Details.Any())
+            {
+                foreach (var detail in deliveryReceipt.Details)
+                {
+                    await AddSalesLineToInventoryAsync(
+                        deliveryReceipt,
+                        detail.ProductId,
+                        detail.PurchaseOrderId,
+                        detail.Quantity,
+                        detail.CustomerOrderSlip,
+                        detail.PurchaseOrder,
+                        cancellationToken);
+                }
+
+                return;
+            }
+
+            await AddSalesLineToInventoryAsync(
+                deliveryReceipt,
+                deliveryReceipt.CustomerOrderSlip!.ProductId,
+                (int)deliveryReceipt.PurchaseOrderId!,
+                deliveryReceipt.Quantity,
+                deliveryReceipt.CustomerOrderSlip,
+                deliveryReceipt.PurchaseOrder,
+                cancellationToken);
+        }
+
+        private async Task AddSalesLineToInventoryAsync(
+            FilprideDeliveryReceipt deliveryReceipt,
+            int productId,
+            int purchaseOrderId,
+            decimal quantity,
+            FilprideCustomerOrderSlip? customerOrderSlip,
+            FilpridePurchaseOrder? purchaseOrder,
+            CancellationToken cancellationToken)
+        {
             var sortedInventory = await _db.FilprideInventories
                 .Where(i => i.Company == deliveryReceipt.Company &&
-                            i.ProductId == deliveryReceipt.CustomerOrderSlip!.ProductId &&
-                            i.POId == deliveryReceipt.PurchaseOrderId)
+                            i.ProductId == productId &&
+                            i.POId == purchaseOrderId)
                 .ToListAsync(cancellationToken);
 
             sortedInventory = OrderInventoryTransactions(sortedInventory).ToList();
@@ -141,22 +175,22 @@ namespace IBS.DataAccess.Repository.Filpride
             var previousInventory = lastIndex >= 0 ? sortedInventory[lastIndex] : null;
             var subsequentTransactions = sortedInventory.Skip(lastIndex + 1).ToList();
             decimal cost;
-            var purchaseOrder = await _db.FilpridePurchaseOrders
-                                    .FirstOrDefaultAsync(x => x.PurchaseOrderId == deliveryReceipt.PurchaseOrderId, cancellationToken)
-                                ?? throw new NullReferenceException("Purchase order not found");
+            purchaseOrder ??= await _db.FilpridePurchaseOrders
+                                 .FirstOrDefaultAsync(x => x.PurchaseOrderId == purchaseOrderId, cancellationToken)
+                             ?? throw new NullReferenceException("Purchase order not found");
 
             if (previousInventory == null)
             {
                 var unitOfWork = new UnitOfWork(_db);
 
-                var freight = deliveryReceipt.CustomerOrderSlip?.DeliveryOption == SD.DeliveryOption_DirectDelivery
-                    ? (decimal)deliveryReceipt.CustomerOrderSlip?.Freight!
+                var freight = customerOrderSlip?.DeliveryOption == SD.DeliveryOption_DirectDelivery
+                    ? (decimal)customerOrderSlip.Freight!
                     : 0;
 
-                var poPrice = await unitOfWork.FilpridePurchaseOrder
+                var grossPoPrice = await unitOfWork.FilpridePurchaseOrder
                     .GetPurchaseOrderCost(purchaseOrder.PurchaseOrderId, cancellationToken) + freight;
 
-                cost = Math.Round(poPrice, 4);
+                cost = ComputeVatAwareCost(RoundToFourDecimalPlaces(grossPoPrice), purchaseOrder.VatType);
             }
             else
             {
@@ -164,23 +198,21 @@ namespace IBS.DataAccess.Repository.Filpride
             }
 
             // Calculate initial values for new inventory entry
-            var inventoryBalance = (previousInventory?.InventoryBalance ?? 0) - deliveryReceipt.Quantity;
+            var inventoryBalance = (previousInventory?.InventoryBalance ?? 0) - quantity;
             var averageCost = cost;
-            var total = purchaseOrder.VatType == SD.VatType_Vatable
-                ? ComputeNetOfVat(deliveryReceipt.Quantity * cost)
-                : deliveryReceipt.Quantity * cost;
+            var total = quantity * cost;
             var totalBalance = inventoryBalance * averageCost;
 
             // Create new inventory entry
             var inventory = new FilprideInventory
             {
                 Date = (DateOnly)deliveryReceipt.DeliveredDate!,
-                ProductId = deliveryReceipt.CustomerOrderSlip!.ProductId,
+                ProductId = productId,
                 Particular = "Sales",
                 Reference = deliveryReceipt.DeliveryReceiptNo,
-                Quantity = deliveryReceipt.Quantity,
+                Quantity = quantity,
                 Cost = cost,
-                POId = deliveryReceipt.PurchaseOrderId,
+                POId = purchaseOrderId,
                 IsValidated = true,
                 ValidatedBy = deliveryReceipt.CreatedBy,
                 ValidatedDate = DateTimeHelper.GetCurrentPhilippineTime(),
@@ -236,7 +268,12 @@ namespace IBS.DataAccess.Repository.Filpride
 
             var orderedInventories = OrderInventoryTransactions(inventories).ToList();
             var previousInventory = orderedInventories.First();
-            previousInventory.Total = previousInventory.Quantity * previousInventory.Cost;
+
+            if (!IsPurchase(previousInventory))
+            {
+                previousInventory.Total = previousInventory.Quantity * previousInventory.Cost;
+            }
+
             previousInventory.AverageCost = previousInventory.Cost;
             previousInventory.TotalBalance = previousInventory.InventoryBalance * previousInventory.AverageCost;
 
@@ -245,29 +282,32 @@ namespace IBS.DataAccess.Repository.Filpride
             await _db.SaveChangesAsync(cancellationToken);
         }
 
-        private Task RecalculateTransactionsAsync(
+        private async Task RecalculateTransactionsAsync(
             FilprideInventory? previousInventory,
             IEnumerable<FilprideInventory> transactions,
             CancellationToken cancellationToken)
         {
             var runningInventoryBalance = previousInventory?.InventoryBalance ?? 0m;
             var runningAverageCost = previousInventory?.AverageCost ?? 0m;
+            var orderedTransactions = OrderInventoryTransactions(transactions).ToList();
 
-            foreach (var transaction in OrderInventoryTransactions(transactions))
+            foreach (var transaction in orderedTransactions)
             {
                 if (IsSales(transaction))
                 {
-                    transaction.Cost = runningAverageCost != 0 ? runningAverageCost : transaction.Cost;
+                    transaction.Cost = runningAverageCost != 0
+                        ? RoundToFourDecimalPlaces(runningAverageCost)
+                        : RoundToFourDecimalPlaces(transaction.Cost);
                     transaction.Total = transaction.Quantity * transaction.Cost;
                     transaction.InventoryBalance = runningInventoryBalance - transaction.Quantity;
-                    transaction.AverageCost = transaction.Cost;
+                    transaction.AverageCost = RoundToFourDecimalPlaces(transaction.Cost);
                     transaction.TotalBalance = transaction.InventoryBalance * transaction.AverageCost;
                 }
                 else if (IsPurchase(transaction))
                 {
-                    transaction.Total = transaction.Quantity * transaction.Cost;
+                    transaction.Cost = RoundToFourDecimalPlaces(transaction.Cost);
                     transaction.InventoryBalance = runningInventoryBalance + transaction.Quantity;
-                    transaction.AverageCost = transaction.Cost;
+                    transaction.AverageCost = RoundToFourDecimalPlaces(transaction.Cost);
                     transaction.TotalBalance = transaction.InventoryBalance * transaction.AverageCost;
                 }
 
@@ -275,7 +315,21 @@ namespace IBS.DataAccess.Repository.Filpride
                 runningInventoryBalance = transaction.InventoryBalance;
             }
 
-            return Task.CompletedTask;
+            await Task.CompletedTask;
+        }
+
+        private decimal ComputeVatAwareCost(decimal grossCost, string vatType)
+        {
+            return vatType == SD.VatType_Vatable
+                ? ComputeNetOfVat(grossCost)
+                : grossCost;
+        }
+
+        private decimal ComputeVatAwareAmount(decimal grossAmount, string vatType)
+        {
+            return vatType == SD.VatType_Vatable
+                ? ComputeNetOfVat(grossAmount)
+                : grossAmount;
         }
 
         private static IOrderedEnumerable<FilprideInventory> OrderInventoryTransactions(IEnumerable<FilprideInventory> inventories)
